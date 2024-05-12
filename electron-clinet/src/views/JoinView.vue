@@ -1,29 +1,42 @@
 <template>
-    <div class="create-container">
+    <div class="container">
         <div class="search-bar-container">
-            <input type="text" placeholder="搜索群组" class="search-bar" />
+            <input type="text" placeholder="搜索文件名或CID" class="search-bar" />
             <button class="search-button">搜索</button>
 
             <div style="width: 40px;"></div>
 
             <div class="create">
-                <div style="display: flex; flex-direction: column; margin-right: 20px;">
-                    <span style="font-size: larger; font-weight: bold;">{{ ownerGroup.length }}</span><span style="font-size: small;">总群数</span>
-                </div>
-                <div style="display: flex; flex-direction: column; margin-right: 20px;">
-                    <span style="font-size: larger; font-weight: bold;">{{ totalFilesCount }}</span><span style="font-size: small;">总文件数</span>
-                </div>
-                <div style="display: flex; flex-direction: column; margin-right: 20px;">
-                    <span style="font-size: larger; font-weight: bold;">{{ totalFileSize }}</span><span style="font-size: small;">总文件大小</span>
-                </div>
-                <button class="create-button"><span style="color: #69c4cd;">+</span> 加入群组</button>
+                <button @click="dialogFormVisible = true" class="create-button"><span style="color: #69c4cd;">+</span> 加入群组</button>
             </div>
+
+            <el-dialog v-model="dialogFormVisible" title="Shipping address" width="500">
+                <el-form :model="form">
+                    <el-form-item label="Promotion name" :label-width="formLabelWidth">
+                        <el-input v-model="form.name" autocomplete="off" />
+                    </el-form-item>
+                    <el-form-item label="Zones" :label-width="formLabelWidth">
+                        <el-select v-model="form.region" placeholder="Please select a zone">
+                            <el-option label="Zone No.1" value="shanghai" />
+                            <el-option label="Zone No.2" value="beijing" />
+                        </el-select>
+                    </el-form-item>
+                </el-form>
+                <template #footer>
+                    <div class="dialog-footer">
+                        <el-button @click="dialogFormVisible = false">Cancel</el-button>
+                        <el-button type="primary" @click="joinGroup()">
+                            Confirm
+                        </el-button>
+                    </div>
+                </template>
+            </el-dialog>
         </div>
 
-        <h1 class="no-group" v-if="ownerGroup.length === 0">您还没有加入群组，点击右上角 <b>加入</b> 🤗</h1>
+        <h1 class="no-group" v-if="memberGroup.length === 0">您还没有加入群组，点击右上角 <b>加入</b> 🤗</h1>
 
         <div v-else>
-            <div class="groups" v-for="group in ownerGroup" :key="group.info">
+            <div class="groups" v-for="group in memberGroup" :key="group.info">
                 <div class="group-item" @click="toggleFiles(group.info.id)">
                     <div style="display: flex; align-items: center;">
                         <div class="status"></div>
@@ -32,14 +45,19 @@
                         <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
                         <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
                     </div>
-                    <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}</div>
+                    <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
+                    </div>
                     <div class="description" v-else>无介绍</div>
                     <div class="buttons">
                         <el-button type="primary" plain class="upload-button">
-                            <el-icon color="#409efc"><Download style="width: 20px;"/></el-icon> 全部下载
+                            <el-icon color="#409efc">
+                                <Download style="width: 20px;" />
+                            </el-icon> 全部下载
                         </el-button>
                         <el-button type="danger" plain class="disband-button">
-                            <el-icon color="#f56c6c"><CircleCloseFilled style="width: 20px;"/></el-icon> 退出群组
+                            <el-icon color="#f56c6c">
+                                <CircleCloseFilled style="width: 20px;" />
+                            </el-icon> 退出群组
                         </el-button>
                     </div>
                 </div>
@@ -49,12 +67,27 @@
                         该群组现在还没有任何文件，请联系群主上传🤗
                     </div>
 
-                    <div v-else>
-                        <div class="file" v-for="file in group.files" :key="file[1]">
-                            <el-icon style="width: 40px; height: 30px;display: flex; align-items: center">
-                                <Link style="width: 20px;"/>
-                            </el-icon>
-                            <div class="file-info">{{ file[0] }} - {{ file[1] }} - {{ file[2] }} - 下载{{ file[3] }}次</div>
+                    <div v-else class="have-file">
+                        <el-table :data="group.files" style="width: 100%;" @selection-change="handleSelectionChange">
+                            <el-table-column type="selection" width="30" />
+                            <el-table-column label="文件名" prop="0" width="150" />
+                            <el-table-column label="时间" prop="1" width="100" />
+                            <el-table-column label="哈希CID" prop="2" width="420" />
+                            <el-table-column label="大小Mb" prop="3" />
+                            <el-table-column label="操作">
+                                <template #default="{ row }">
+                                    <el-button @click="download(row[0], row[2])" type="info" plain
+                                        style="width: 80%;">下载</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                        <div style="margin-top: 10px;">
+                            <el-button type="primary" plain @click="toggleSelection(group.files)">
+                                下载所选文件
+                            </el-button>
+                            <el-button type="primary" plain @click="toggleSelection()">
+                                清除选择
+                            </el-button>
                         </div>
                     </div>
                 </div>
@@ -71,7 +104,7 @@
 export default {
     data() {
         return {
-            ownerGroup: [
+            memberGroup: [
                 {
                     "info": {
                         "id": "123456789",
@@ -79,8 +112,8 @@ export default {
                         "description": "用来存放一些电影",
                     },
                     "files": [
-                        ["肖申克的救赎.mp4", "bafyreif3tfdpr5n4jdrbielmcapwvbpcthepfkwg2vwonmlhirbjmotedi", "2.5 GiB", "26"],
-                        ["霸王别姬.zip", "oiw4elotevbigmcapnfkm2vwihirbjprdbafyrclbwthepedm5nf3tfdjpr", "1.9 GiB", "18"]
+                        ["肖申克的救赎.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560"],
+                        ["霸王别姬.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6"]
                     ]
                 },
                 {
@@ -90,8 +123,8 @@ export default {
                         "description": "用来存放一些电影",
                     },
                     "files": [
-                        ["金蝉脱壳.mp4", "bafyreif3tfdpr5n4jdrbielmcapwvbpcthepfkwg2vwonmlhirbjmotedi", "2.5 GiB", "26"],
-                        ["中南海保镖.zip", "oiw4elotevbigmcapnfkm2vwihirbjprdbafyrclbwthepedm5nf3tfdjpr", "1.9 GiB", "18"]
+                        ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560"],
+                        ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6"]
                     ]
                 },
                 {
@@ -103,81 +136,43 @@ export default {
                     "files": []
                 }
             ],
+            dialogFormVisible: false,
+            form: {
+                name: '',
+                region: '',
+            },
             expandedGroups: [],
         };
     },
     methods: {
+        joinGroup() {
+            console.log("加入了一个群组");
+            this.dialogFormVisible = false;
+        },
         toggleFiles(groupId) {
             if (this.expandedGroups.includes(groupId)) {
                 this.expandedGroups = this.expandedGroups.filter(id => id !== groupId);
             } else {
                 this.expandedGroups.push(groupId);
             }
-        }
-    },
-    computed: {
-        totalFilesCount() {
-            let count = 0;
-            for (let group of this.ownerGroup) {
-                count += group.files.length;
-            }
-            return count;
         },
-        totalFileSize() {
-            let totalSize = 0;
-            for (let group of this.ownerGroup) {
-                for (let file of group.files) {
-                let size = parseFloat(file[2]);
-                totalSize += size;
-                }
+        toggleSelection(files) {
+            if (files) {
+                files.forEach((file) => {
+                    this.remove(file[0], file[2]);
+                });
+                this.$refs.multipleTableRef.clearSelection();
+            } else {
+                this.$refs.multipleTableRef.clearSelection();
             }
-            return totalSize.toFixed(2) + " GiB";
+        },
+        handleSelectionChange(val) {
+            this.multipleSelection = val
+        },
+        download(fileName, fileHash) {
+            console.log(`下载了${fileName}-${fileHash}`);
         }
     }
-    // mounted() {
-    //     this.fetchPublishedProjects();
-    //     this.fetchRaisedProjects();
-    // },
-    // methods: {
-    //     async fetchPublishedProjects() {
-    //         const currentUserId = this.$route.params.userId;
-    //         try {
-    //             const response = await axios.get(`http://localhost:5000/my_published_projects?id=${currentUserId}`);
-    //             this.publishedProjects = response.data.projects;
-    //             this.publishedProjects.forEach(project => {
-    //                 project.photos = require(`@/assets/projects/${JSON.parse(project.photos)[0]}`)
-
-    //                 // console.log(typeof parseInt(project.current_amount));
-    //                 project.current_amount = parseInt(project.current_amount);
-    //                 project.target_amount = parseInt(project.target_amount);
-    //             })
-    //         } catch (error) {
-    //             console.error('Error fetching projects:', error);
-    //         }
-    //     },
-    //     async fetchRaisedProjects() {
-    //         const currentUserId = this.$route.params.userId;
-    //         try {
-    //             const response = await axios.get(`http://localhost:5000/my_raised_projects?id=${currentUserId}`);
-    //             this.raisedProjects = response.data.projects;
-    //             this.raisedProjects.forEach(project => {
-    //                 project.photos = require(`@/assets/projects/${JSON.parse(project.photos)[0]}`)
-
-    //                 // console.log(typeof parseInt(project.current_amount));
-    //                 project.current_amount = parseInt(project.current_amount);
-    //                 project.target_amount = parseInt(project.target_amount);
-    //             })
-    //         } catch (error) {
-    //             console.error('Error fetching projects:', error);
-    //         }
-    //     },
-    //     getRandomColor() {
-    //         const colors = ['#FF6347', '#4682B4', '#32CD32', '#FFD700', '#6A5ACD', '#FF4500', '#20B2AA'];
-    //         const randomIndex = Math.floor(Math.random() * colors.length);
-    //         return colors[randomIndex];
-    //         // return '#' + Math.floor(Math.random() * 16777215).toString(16);
-    //     }
-    // }
 }
 </script>
 
@@ -190,7 +185,7 @@ export default {
 }
 
 .search-bar {
-    width: 40%;
+    width: 50%;
     padding-left: 20px;
     border: none;
     border-radius: 5px;
@@ -231,13 +226,14 @@ export default {
 
 .no-file {
     width: 80%;
-    height: 20%;
+    height: 40px;
     margin-left: 10%;
+    padding-top: 10px;
 }
 
-/* .groups {
-    margin: 20px 0px;
-} */
+.have-file {
+    padding-bottom: 10px;
+}
 
 .group-item {
     width: 90%;
@@ -247,13 +243,13 @@ export default {
 
     display: flex;
     align-items: center;
-    border-bottom: 2px solid grey;
+    border-bottom: 1px solid grey;
 }
 
 .status {
     flex: 1;
-    width: 20px;
-    height: 20px;
+    width: 15px;
+    height: 15px;
 
     border-radius: 50%;
     background-color: green;
@@ -284,24 +280,12 @@ export default {
     flex: 10;
     display: flex;
     align-items: center;
+    justify-content: center;
 }
-
-/* .upload-button, .disband-button {
-    height: 50%;
-    width: 100%;
-} */
-
-/* .upload-button {
-    background-color: #234d64;
-}
-
-.disband-button {
-    background-color: #f56c6c;
-} */
 
 .files {
-    width: 80%;
-    margin-left: 10%;
+    width: 90%;
+    margin-left: 5%;
     background-color: #f0f9fa;
 }
 
@@ -317,5 +301,4 @@ export default {
     display: flex;
     align-items: center;
 }
-
 </style>

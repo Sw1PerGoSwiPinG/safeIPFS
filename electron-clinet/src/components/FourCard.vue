@@ -59,7 +59,7 @@
 .container-top {
 	display: flex;
 	justify-content: space-between;
-	width: 80%;
+	width: 90%;
 	margin: 25px auto;
 }
 
