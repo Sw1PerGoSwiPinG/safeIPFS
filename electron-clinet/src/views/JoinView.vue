@@ -99,7 +99,7 @@
 </template>
 
 <script>
-// import axios from 'axios';
+import axios from 'axios';
 
 export default {
     data() {
@@ -145,6 +145,17 @@ export default {
         };
     },
     methods: {
+        async sendUserId() {
+            const response = await axios.post('http://localhost:5000/request_group_files', {
+                userId: parseInt(this.$route.params.userId)
+            });
+            if (response.status === 200) {
+                // this.memberGroup = response.data.groups;
+                console.log(response.data.files)
+            } else {
+                alert("请求失败，请联系开发人员");
+            }
+        },
         joinGroup() {
             console.log("加入了一个群组");
             this.dialogFormVisible = false;
@@ -172,6 +183,10 @@ export default {
         download(fileName, fileHash) {
             console.log(`下载了${fileName}-${fileHash}`);
         }
+    },
+    mounted() {
+        console.log("start send!");
+        this.sendUserId();
     }
 }
 </script>

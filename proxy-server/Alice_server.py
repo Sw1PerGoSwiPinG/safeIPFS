@@ -24,7 +24,8 @@ CORS(app)
 # app.config["SESSION_TYPE"] = "filesystem"
 # Session(app)
 port = 5000
-proxy_address = "localhost"
+proxy_address = "10.122.236.111"
+proxy_port = 5000
 # conn = sqlite3.connect("owner.db")
 
 import sqlite3
@@ -39,8 +40,8 @@ def get_db_connection():
 # 登录路由
 @app.route("/login", methods=["POST"])
 def login():
-    username = request.json.get("username")
-    password = request.json.get("password")
+    username = request.json["username"]
+    password = request.json["password"]
     # 计算密码的SHA-256哈希值
     password_hash = hashlib.sha256(password.encode()).hexdigest()
     ip_address = socket.gethostbyname(socket.gethostname())
@@ -53,7 +54,7 @@ def login():
     }
 
     # 发送数据到代理并等待响应
-    response = requests.post(f"http://{proxy_address}:5000/validate_login", json=data)
+    response = requests.post(f"http://{proxy_address}:{proxy_port}/validate_login", json=data)
     if response.status_code == 200:
         print("Login successful")
         # session["user_id"] = username
@@ -69,7 +70,6 @@ def login():
 def register():
     username = request.json["username"]
     password = request.json["password"]
-    print("here!", username, password)
     password_hash = hashlib.sha256(password.encode()).hexdigest()
     ip_address = socket.gethostbyname(socket.gethostname())
 
@@ -81,7 +81,7 @@ def register():
     }
 
     # 发送数据到代理并等待响应
-    response = requests.post(f"http://{proxy_address}:5000/register", json=data)
+    response = requests.post(f"http://{proxy_address}:{proxy_port}/register", json=data)
     if response.status_code == 200:
         print("Register successful")
         return jsonify({"message": "Register successful", "user_id": username})
@@ -92,10 +92,11 @@ def register():
 
 @app.route("/create_group", methods=["POST"])
 def create_group():
-    user_id = request.json.get("user_id")
-    file_key = request.json.get("file_key")
-    group_name = request.json.get("group_name")
-    group_description = request.json.get("group_description")
+    user_id = request.json["user_id"]
+    print(user_id)
+    file_key = request.json["file_key"]
+    group_name = request.json["group_name"]
+    group_description = request.json["group_description"]
     owner_secret_key = SecretKey.random()
     owner_public_key = owner_secret_key.public_key()
     conn = get_db_connection()
@@ -112,6 +113,7 @@ def create_group():
     )
     conn.commit()
     conn.close()
+    print(file_key)
     capsule, encrypted_file_key = encrypt(owner_public_key, file_key.encode())
     data = {
         "user_id": user_id,
@@ -121,7 +123,7 @@ def create_group():
         "group_name": group_name,
         "group_description": group_description,
     }
-    response = requests.post(f"http://{proxy_address}:5000/receive", json=data)
+    response = requests.post(f"http://{proxy_address}:{proxy_port}/receive", json=data)
     group_id = response.text
     conn = get_db_connection()
     c = conn.cursor()
@@ -136,7 +138,8 @@ def create_group():
     )
     conn.commit()
     conn.close()
-    return jsonify({"message": "Data saved", "group_id": group_id})
+    return jsonify({"message": "Data saved", "group_id": group_id, "public_key": bytes(owner_public_key).hex(),
+                    "private_key": owner_secret_key.to_secret_bytes().hex()})
 
 
 @app.route("/request_access", methods=["POST"])
@@ -189,7 +192,7 @@ def request_access():
             "requester_public_key": result["public_key"],
             "group_id": group_id,
         }
-    response = requests.post(f"http://{proxy_address}:5000/get_address", json=data)
+    response = requests.post(f"http://{proxy_address}:{proxy_port}/get_address", json=data)
     if response.status_code == 200:
         return (
             jsonify({"message": "Access request submitted for group ID: " + group_id}),
@@ -205,7 +208,7 @@ def logout():
     data = {
         "user_id": request_data["user_id"],
     }
-    response = requests.post(f"http://{proxy_address}:5000/logout", json=data)
+    response = requests.post(f"http://{proxy_address}:{proxy_port}/logout", json=data)
     return jsonify({"message": json.loads(response.text)["message"]})
 
 
@@ -213,7 +216,7 @@ def logout():
 def get_requests():
     user_id = request.json.get("user_id")
     data = {"user_id": user_id}
-    response = requests.post(f"http://{proxy_address}:5000/get_requests", json=data)
+    response = requests.post(f"http://{proxy_address}:{proxy_port}/get_requests", json=data)
     return jsonify({"requests": json.loads(response.text)["requests"]})
 
 
@@ -223,7 +226,7 @@ def get_public_key():
     requester_id = request.json.get("requester_id")
     group_id = request.json.get("group_id")
     data = {"owner_id": owner_id, "requester_id": requester_id, "group_id": group_id}
-    response = requests.post(f"http://{proxy_address}:5000/get_public_key", json=data)
+    response = requests.post(f"http://{proxy_address}:{proxy_port}/get_public_key", json=data)
     requester_public_key_bytes = json.loads(response.text)["requester_public_key"]
     requester_public_key = PublicKey.from_bytes(
         bytes.fromhex(requester_public_key_bytes)
@@ -255,7 +258,7 @@ def get_public_key():
         "owner_id": owner_id,
     }
     response_ = requests.post(
-        f"http://{proxy_address}:5000/calculate_cfrag", json=data_
+        f"http://{proxy_address}:{proxy_port}/calculate_cfrag", json=data_
     )
     if response_.status_code == 200:
         return jsonify({"message": "Success!"}), 200
@@ -268,7 +271,7 @@ def get_approved_requests():
     requester_id = request.json.get("requester_id")
     data = {"requester_id": requester_id}
     response = requests.post(
-        f"http://{proxy_address}:5000/get_approved_requests", json=data
+        f"http://{proxy_address}:{proxy_port}/get_approved_requests", json=data
     )
     return jsonify({"requests": json.loads(response.text)["requests"]})
 
@@ -280,7 +283,7 @@ def process_approved_request():
     group_id = request.json.get("group_id")
     data_ = {"requester_id": requester_id, "owner_id": owner_id, "group_id": group_id}
     response = requests.post(
-        f"http://{proxy_address}:5000/process_approved_request", json=data_
+        f"http://{proxy_address}:{proxy_port}/process_approved_request", json=data_
     )
     data = json.loads(response.text)
     cfrag_bytes = data["cfrag"]
@@ -328,6 +331,49 @@ def process_approved_request():
         ),
         200,
     )
+
+
+@app.route('/upload_file', methods=['POST'])
+def upload_file():
+    data = request.json
+    group_id = data['group_id']
+    ipfs_hash = data['ipfs_hash']
+    file_name = data['file_name']
+    data_ = {
+        'group_id': group_id,
+        'ipfs_hash': ipfs_hash,
+        'file_name': file_name,
+    }
+    response = requests.post(f'http://{proxy_address}:{proxy_port}/add_file', json=data_)
+    if response.status_code == 200:
+        return jsonify({'message': 'File added successfully!'})
+
+
+@app.route('/request_group_files', methods=['POST'])
+def request_group_files():
+    data = request.json
+    groups_ids = []
+    requester_id = data['userId']
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    c.execute("SELECT group_id FROM KeyTable WHERE file_key IS NOT NULL")
+    rows = c.fetchall()
+
+    for row in rows:
+        groups_ids.append(row[0])
+
+    data_ = {
+        'groups_ids': groups_ids,
+        'requester_id': requester_id,
+    }
+    response = requests.post(f'http://{proxy_address}:{proxy_port}/request_group_files', json=data_)
+    print(json.loads(response.text)['files_info'])
+    if response.status_code == 200:
+        return jsonify(
+            {'message': 'Request submitted successfully!', 'files': json.loads(response.text)['files_info']}), 200
+    else:
+        return jsonify({'message': 'Request failed!'}), 400
 
 
 if __name__ == "__main__":
