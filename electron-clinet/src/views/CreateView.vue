@@ -407,6 +407,7 @@ export default {
     },
     mounted() {
         this.refresh();
+        this.ipfs = create("http://localhost:5001/api/v0")
     }
     // mounted() {
     //     // nextTick(() => {
