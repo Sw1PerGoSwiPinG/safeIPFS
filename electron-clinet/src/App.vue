@@ -1,25 +1,25 @@
 <template>
-    <div class="container">
+    <div class="app-container">
         <div class="nav" id="nav">
             <div class="logo">
                 <div class="name">SafeIPFS</div><br>
                 <div class="author"> Designed by <br> zjy | szt | lxh | lhy </div>
             </div>
 
-            <router-link to="/home">
-                <div class="nav-item" :class="{ 'active': $route.path === `/home` }">系统首页</div>
+            <router-link :to="`/${userId}/home`">
+                <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/home` }">系统首页</div>
             </router-link>
-            <router-link to="/create">
-                <div class="nav-item" :class="{ 'active': $route.path === `/create` }">创建&上传</div>
+            <router-link :to="`/${userId}/create`">
+                <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/create` }">创建&上传</div>
             </router-link>
-            <router-link to="/join">
-                <div class="nav-item" :class="{ 'active': $route.path === `/join` }">加入&下载</div>
+            <router-link :to="`/${userId}/join`">
+                <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/join` }">加入&下载</div>
             </router-link>
-            <router-link to="/node">
-                <div class="nav-item" :class="{ 'active': $route.path === `/node` }">节点查询</div>
+            <router-link :to="`/${userId}/node`">
+                <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/node` }">节点查询</div>
             </router-link>
-            <router-link to="/setting">
-                <div class="nav-item" :class="{ 'active': $route.path === `/setting` }">信息配置</div>
+            <router-link :to="`/${userId}/setting`">
+                <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/setting` }">信息配置</div>
             </router-link>
         </div>
         <div style="margin-left: 190px;">
@@ -28,6 +28,16 @@
     </div>
 </template>
 
+<script>
+export default {
+    computed: {
+        userId() {
+            return this.$route.params.userId; // 获取当前用户 ID
+        }
+    }
+}
+</script>
+
 <style>
 #app {
     font-family: Avenir, Helvetica, Arial, sans-serif;
@@ -35,6 +45,10 @@
     -moz-osx-font-smoothing: grayscale;
     text-align: center;
     color: #2c3e50;
+}
+
+.container {
+    overflow: hidden;
 }
 
 .logo {

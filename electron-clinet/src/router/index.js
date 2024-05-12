@@ -14,35 +14,41 @@ const routes = [
         component: LoginView
     },
     {
-        path: '/home',
-        name: 'home',
-        component: HomeView
-    },
-    {
-        path: '/create',
-        name: 'create',
-        component: CreateView
-    },
-    {
-        path: '/join',
-        name: 'join',
-        component: JoinView
-    },
-    {
-        path: '/node',
-        name: 'node',
-        component: NodeView
-    },
-    {
-        path: '/setting',
-        name: 'setting',
-        component: SettingView
-    },
-    {
         path: '/register',
         name: 'register',
         component: RegisterView
     },
+    {
+        path: '/:userId',
+        children: [
+            {
+                path: 'home',
+                name: 'home',
+                component: HomeView
+            },
+            {
+                path: 'create',
+                name: 'create',
+                component: CreateView
+            },
+            {
+                path: 'join',
+                name: 'join',
+                component: JoinView
+            },
+            {
+                path: 'node',
+                name: 'node',
+                component: NodeView
+            },
+            {
+                path: 'setting',
+                name: 'setting',
+                component: SettingView
+            },
+        ]
+    },
+
     //   path: '/about',
     //   name: 'about',
     //   // route level code-splitting

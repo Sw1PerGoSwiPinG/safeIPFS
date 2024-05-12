@@ -34,12 +34,12 @@ export default {
     name: "LoginView",
     data: () => {
         return {
-            username: '',
+            username: 'hello SafeIPFS :)',
             password: ''
         }
     },
     methods: {
-        login() { this.$router.push(`/home`); },
+        login() { console.log(this.username); this.$router.push(`${this.username}/home`); },
         register() { this.$router.push("/register"); },
         // async login() {
         //     try {

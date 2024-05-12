@@ -80,7 +80,7 @@ const config = ref({
         }
     }, 
     "table": { 
-        "show": true, 
+        "show": false, 
         "responsiveBreakpoint": 400, 
         "th": { 
             "backgroundColor": "#B7EB8F", 
