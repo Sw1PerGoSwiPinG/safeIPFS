@@ -4,13 +4,13 @@ const db = new Dexie('myDB');
 
 // 定义表格结构
 db.version(1).stores({
-    KeyTable: '++group_id, file_key, public_key, private_key'
+    KeyTable: '++group_id, group_name, group_description, file_key, public_key, private_key'
 });
 
 // 插入数据到KeyTable
-export async function AddKeyToTable(group_id, file_key, public_key, private_key) {
+export async function AddKeyToTable(group_id, group_name, group_description, file_key, public_key, private_key) {
     try {
-        await db.KeyTable.add({ group_id, file_key, public_key, private_key });
+        await db.KeyTable.add({ group_id, group_name, group_description, file_key, public_key, private_key });
         console.log('Data added successfully.');
     } catch (error) {
         console.error('Error adding data: ', error);

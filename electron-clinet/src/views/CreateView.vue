@@ -8,26 +8,31 @@
 
             <div class="create">
                 <div style="display: flex; flex-direction: column; margin-right: 20px;">
-                    <span style="font-size: larger; font-weight: bold;">{{ ownerGroup.length }}</span><span style="font-size: small;">总群数</span>
+                    <span style="font-size: larger; font-weight: bold;">{{ ownerGroup.length }}</span><span
+                        style="font-size: small;">总群数</span>
                 </div>
                 <div style="display: flex; flex-direction: column; margin-right: 20px;">
-                    <span style="font-size: larger; font-weight: bold;">{{ totalFilesCount }}</span><span style="font-size: small;">总文件数</span>
+                    <span style="font-size: larger; font-weight: bold;">{{ totalFilesCount }}</span><span
+                        style="font-size: small;">总文件数</span>
                 </div>
                 <div style="display: flex; flex-direction: column; margin-right: 20px;">
-                    <span style="font-size: larger; font-weight: bold;">{{ totalFileSize }}</span><span style="font-size: small;">总文件大小</span>
+                    <span style="font-size: larger; font-weight: bold;">{{ totalFileSize }}</span><span
+                        style="font-size: small;">总文件大小</span>
                 </div>
-                <button class="create-button" @click="dialogFormVisible = true"><span style="color: #69c4cd;">+</span> 创建群组</button>
+                <button class="create-button" @click="dialogFormVisible = true"><span style="color: #69c4cd;">+</span>
+                    创建群组</button>
 
                 <el-dialog v-model="dialogFormVisible" title="Shipping address" width="500">
                     <el-form :model="form">
-                        <el-form-item label="Promotion name" :label-width="formLabelWidth">
-                            <el-input v-model="form.name" autocomplete="off" />
+                        <el-form-item label="Group name" :label-width="formLabelWidth">
+                            <el-input v-model="form.group_name" autocomplete="off" />
                         </el-form-item>
-                        <el-form-item label="Zones" :label-width="formLabelWidth">
-                            <el-select v-model="form.region" placeholder="Please select a zone">
+                        <el-form-item label="Group description" :label-width="formLabelWidth">
+                            <!-- <el-select v-model="form.region" placeholder="Please select a zone">
                             <el-option label="Zone No.1" value="shanghai" />
                             <el-option label="Zone No.2" value="beijing" />
-                            </el-select>
+                            </el-select> -->
+                            <el-input v-model="form.group_description" autocomplete="off" />
                         </el-form-item>
                     </el-form>
                     <template #footer>
@@ -55,36 +60,39 @@
                         <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
                         <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
                     </div>
-                    <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}</div>
+                    <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
+                    </div>
                     <div class="description" v-else>无介绍</div>
                     <div class="buttons">
                         <el-button type="primary" plain class="upload-button">
-                            <el-icon color="#409efc"><UploadFilled style="width: 20px;"/></el-icon> 上传文件
+                            <el-icon color="#409efc">
+                                <UploadFilled style="width: 20px;" />
+                            </el-icon> 上传文件
                         </el-button>
                         <el-button type="danger" plain class="disband-button">
-                            <el-icon color="#f56c6c"><RemoveFilled style="width: 20px;"/></el-icon> 解散群组
+                            <el-icon color="#f56c6c">
+                                <RemoveFilled style="width: 20px;" />
+                            </el-icon> 解散群组
                         </el-button>
                     </div>
                 </div>
 
-                <div class="files" v-if="expandedGroups.includes(group.info.id)">                    
+                <div class="files" v-if="expandedGroups.includes(group.info.id)">
                     <div class="no-file" v-if="group.files.length === 0">
-                        <span style="font-size: large;">现在还没有任何文件！使用上方的 <b>上传</b> 按钮为您的本地IPFS 节点添加文件。</span> 
+                        <span style="font-size: large;">现在还没有任何文件！使用上方的 <b>上传</b> 按钮为您的本地IPFS 节点添加文件。</span>
                     </div>
                     <div v-else class="have-file">
-                        <el-table stripe
-                            :data="group.files"
-                            style="width: 100%;"
-                            @selection-change="handleSelectionChange"
-                            >
+                        <el-table stripe :data="group.files" style="width: 100%;"
+                            @selection-change="handleSelectionChange">
                             <el-table-column type="selection" width="30" />
-                            <el-table-column label="文件名" prop="0"  width="150"/>
-                            <el-table-column label="时间" prop="1" width="100"/>
+                            <el-table-column label="文件名" prop="0" width="150" />
+                            <el-table-column label="时间" prop="1" width="100" />
                             <el-table-column label="哈希CID" prop="2" width="420" />
                             <el-table-column label="大小Mb" prop="3" />
                             <el-table-column label="操作">
                                 <template #default="{ row }">
-                                    <el-button @click="remove(row[0], row[2])" type="info" plain style="width: 80%;">移除</el-button>
+                                    <el-button @click="remove(row[0], row[2])" type="info" plain
+                                        style="width: 80%;">移除</el-button>
                                 </template>
                             </el-table-column>
                         </el-table>
@@ -107,9 +115,11 @@
 </template>
 
 <script>
-// import axios from 'axios';
+import axios from 'axios';
 import { ref } from 'vue'
 import { ElTable, ElButton } from 'element-plus'
+import CryptoService from '@/services/CryptoService';
+import { AddKeyToTable } from '@/services/DataBase';
 
 export default {
     components: {
@@ -152,17 +162,84 @@ export default {
             expandedGroups: [],
             dialogFormVisible: false,
             form: {
-                name: '',
-                region: '',
+                group_name: '',
+                group_description: '',
             },
             multipleTableRef: ref(null),
             multipleSelection: ref([]),
         };
     },
     methods: {
-        createGroup() {
+        bufferToHex(buffer) {
+            const bytes = new Uint8Array(buffer);
+            return bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), ''); // 将每个字节转换为十六进制
+        },
+        async getKeyAsHexString() {
+            const key = await CryptoService.generateAESKey(); // 生成密钥
+            // console.log(key);
+            const exportedKey = await window.crypto.subtle.exportKey("raw", key); // 导出为ArrayBuffer
+            return this.bufferToHex(exportedKey); // 转换为十六进制字符串
+        },
+        hexToBuffer(hexString) {
+            const length = hexString.length / 2;
+            const buffer = new Uint8Array(length);
+            for (let i = 0; i < length; i++) {
+                const index = i * 2;
+                const byteValue = parseInt(hexString.substring(index, index + 2), 16);
+                buffer[i] = byteValue;
+            }
+            return buffer.buffer; // 返回ArrayBuffer
+        },
+        async importKeyFromHex(hexString) {
+            const keyBuffer = this.hexToBuffer(hexString);
+            const keyAlgorithm = {
+                name: "AES-CBC",
+                length: 256 // 确保这里的长度和算法与你原始生成密钥时使用的设置匹配
+            };
+            const key = await window.crypto.subtle.importKey(
+                "raw", // 密钥格式
+                keyBuffer, // 十六进制字符串转换来的ArrayBuffer
+                keyAlgorithm, // 定义密钥的算法
+                true, // 是否可导出
+                ["encrypt", "decrypt"] // 密钥用途
+            );
+            return key;
+        },
+        async createGroup() {
             console.log("创建了一个群组");
             this.dialogFormVisible = false;
+            var user_id = this.$route.params.userId;
+            var group_name = this.form.group_name;
+            var group_description = this.form.group_description;
+            // var file_key = await CryptoService.generateAESKey();
+            var file_key = await this.getKeyAsHexString();
+            // console.log(this.importKeyFromHex(file_key));
+            try {
+                const response = await axios.post('http://localhost:5000/create_group', {
+                    user_id: user_id,
+                    group_name: group_name,
+                    group_description: group_description,
+                    file_key: file_key
+                })
+                console.log(response.data.group_id);
+                try {
+                    AddKeyToTable(response.data.group_id, group_name, group_description, file_key, response.data.public_key, response.data.private_key);
+                    console.log("成功添加到数据库");
+                } catch (error) {
+                    console.log(error);
+                }
+                this.ownerGroup.push({
+                    "info": {
+                        "id": response.data.group_id,
+                        "name": group_name,
+                        "description": group_description,
+                    },
+                    "files": []
+                });
+            } catch (error) {
+                console.log(error);
+            }
+
         },
         toggleGroups(groupId) {
             if (this.expandedGroups.includes(groupId)) {
@@ -200,11 +277,11 @@ export default {
             let totalSize = 0;
             for (let group of this.ownerGroup) {
                 for (let file of group.files) {
-                let size = parseFloat(file[3]);
-                totalSize += size;
+                    let size = parseFloat(file[3]);
+                    totalSize += size;
                 }
             }
-            return (totalSize/1024).toFixed(2) + " GiB";
+            return (totalSize / 1024).toFixed(2) + " GiB";
         }
     },
     // mounted() {
@@ -382,5 +459,4 @@ export default {
     display: flex;
     align-items: center;
 }
-
 </style>
