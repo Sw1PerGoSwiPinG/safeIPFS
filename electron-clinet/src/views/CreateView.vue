@@ -52,21 +52,14 @@
             <div class="requests">
                 <el-table :data="requests" style="width: 100%;">
                     <el-table-column type="index" width="30" />
-                    <el-table-column label="申请者" prop="requester_id" />
-                    <el-table-column label="群组ID" prop="group_id" />
-                    <el-table-column label="申请时间" prop="time" />
+                    <el-table-column label="申请者" prop="requester_id"/>
+                    <el-table-column label="群组ID" prop="group_id"/>
+                    <el-table-column label="申请时间" prop="time"/>
                     <el-table-column label="操作">
                         <template #default="{ row }">
                             <div>
-<<<<<<< HEAD
                                 <el-button @click="permit(row.requester_id, row.group_id, true)" type="info" plain style="width: 40%;">同意</el-button>
                                 <el-button @click="permit(row.requester_id, row.group_id, false)" type="info" plain style="width: 40%;">拒绝</el-button>
-=======
-                                <el-button @click="permit(row[0], row[2], true)" type="info" plain
-                                    style="width: 40%;">同意</el-button>
-                                <el-button @click="permit(row[0], row[2], false)" type="info" plain
-                                    style="width: 40%;">拒绝</el-button>
->>>>>>> c495d2a57ee5b02cc1c2c2fb7bc5c70121dfdbdc
                             </div>
                         </template>
                     </el-table-column>
@@ -412,16 +405,8 @@ export default {
             return (totalSize / 1024).toFixed(2) + " GiB";
         }
     },
-<<<<<<< HEAD
     mounted() {
         this.refresh();
-=======
-    async mounted() {
-        // Initialize IPFS
-        this.ipfs = create('http://localhost:5001/api/v0');
-        // 遍历数据库，获取所有群组信息
-
->>>>>>> c495d2a57ee5b02cc1c2c2fb7bc5c70121dfdbdc
     }
     // mounted() {
     //     // nextTick(() => {
