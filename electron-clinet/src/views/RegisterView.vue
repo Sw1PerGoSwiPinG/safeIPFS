@@ -40,7 +40,7 @@
 
 
 <script>
-// import axios from 'axios';
+import axios from 'axios';
 
 export default {
     name: "RegisterView",
@@ -48,7 +48,7 @@ export default {
         return {
             username: '',
             password: '',
-            email: '',
+            email: 'example@bupt.edn.cn',
             avatarFile: null,
             avatarPreview: 'https://s2.loli.net/2024/04/23/6kLR41dJxe23bXv.jpg' // 用于预览用户头像的图片URL
         }
@@ -67,41 +67,30 @@ export default {
         login() {
             this.$router.push(`/`);
         },
-        register() {
-            this.$router.push(`/home`);
-        },
-        // async register() {
-        //     try {
-        //         // 创建 FormData 对象，用于发送文件和其他数据
-        //         const formData = new FormData();
-        //         if (this.avatarFile != null) {
-        //             formData.append('avatar', this.avatarFile);
-        //         } else {
-        //             formData.append('avatar', '');
-        //         }
+        async register() {
+            try {
+                const requestData = {
+                    username: this.username,
+                    password: this.password
+                };
 
-        //         formData.append('username', this.username);
-        //         formData.append('password', this.password);
-        //         formData.append('email', this.email);
+                const response = await axios.post('http://localhost:5000/register', requestData);
+                console.log(response.data);
 
-        //         const response = await axios.post('http://localhost:5000/user-register', formData);
-        //         console.log(response.data);
-
-        //         if (response.data.status === true) {
-        //             const currentUserId = response.data.id;
-        //             this.$router.push(`${currentUserId}/home`);
-        //         } else {
-        //             alert("该用户名已注册，请重新输入");
-        //             this.avatar = '';
-        //             this.username = '';
-        //             this.password = '';
-        //             this.email = '';
-        //         }
-        //     } catch (error) {
-        //         console.log(error);
-        //         alert("出现错误，联系开发人员");
-        //     }
-        // }
+                if (response.data.message === "Register successful") {
+                    this.$router.push(`${this.username}/home`);
+                } else {
+                    alert("该用户名已注册，请重新输入");
+                    this.avatar = '';
+                    this.username = '';
+                    this.password = '';
+                    this.email = 'example@bupt.edn.cn';
+                }
+            } catch (error) {
+                console.log(error);
+                alert("出现错误，联系开发人员");
+            }
+        }
     }
 }
 </script>

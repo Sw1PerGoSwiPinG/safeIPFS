@@ -66,7 +66,7 @@
 .box {
 	width: 23%;
 	height: 160px;
-	background-color: #f0f6fa;
+	background-color: #fbfbfb;
 	border-radius: 10px;
 	padding: 10px;
 	box-sizing: border-box;

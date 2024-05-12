@@ -43,6 +43,35 @@
             </div>
         </div>
 
+        <div class="requests-box">
+            <div class="requests">
+                <el-table
+                    :data="requests"
+                    style="width: 100%;"
+                    >
+                    <el-table-column type="index" width="30" />
+                    <el-table-column label="申请者" prop="requester_id"/>
+                    <el-table-column label="群组ID" prop="group_id"/>
+                    <el-table-column label="申请时间" prop="time"/>
+                    <el-table-column label="操作">
+                        <template #default="{ row }">
+                            <div>
+                                <el-button @click="permit(row[0], row[2], true)" type="info" plain style="width: 40%;">同意</el-button>
+                                <el-button @click="permit(row[0], row[2], false)" type="info" plain style="width: 40%;">拒绝</el-button>
+                            </div>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+            <div class="handleAll">
+                <button class="handleall-button" @click="handleAll(true)">全部同意</button>
+                <button class="handleall-button" @click="handleAll(false)">全部拒接</button>
+            </div>
+            <div>
+                <div class="refresh-button" @click="refresh()">刷新<br><span style="font-size: 25px;">🆕</span></div>
+            </div>
+        </div>
+
         <h1 class="no-group" v-if="ownerGroup.length === 0">您还没有创建群组，点击右上角 <b>创建</b> 🤗</h1>
 
         <div v-else>
@@ -58,10 +87,10 @@
                     <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}</div>
                     <div class="description" v-else>无介绍</div>
                     <div class="buttons">
-                        <el-button type="primary" plain class="upload-button">
+                        <el-button type="primary" plain class="upload-button" @click.stop="upload()">
                             <el-icon color="#409efc"><UploadFilled style="width: 20px;"/></el-icon> 上传文件
                         </el-button>
-                        <el-button type="danger" plain class="disband-button">
+                        <el-button type="danger" plain class="disband-button" @click.stop="disband()">
                             <el-icon color="#f56c6c"><RemoveFilled style="width: 20px;"/></el-icon> 解散群组
                         </el-button>
                     </div>
@@ -69,10 +98,10 @@
 
                 <div class="files" v-if="expandedGroups.includes(group.info.id)">                    
                     <div class="no-file" v-if="group.files.length === 0">
-                        <span style="font-size: large;">现在还没有任何文件！使用上方的 <b>上传</b> 按钮为您的本地IPFS 节点添加文件。</span> 
+                        <span style="font-size: large;">现在还没有任何文件！使用上方的 <b>上传</b> 按钮为您的群组 节点添加文件。</span> 
                     </div>
                     <div v-else class="have-file">
-                        <el-table stripe
+                        <el-table 
                             :data="group.files"
                             style="width: 100%;"
                             @selection-change="handleSelectionChange"
@@ -101,13 +130,13 @@
                 </div>
             </div>
         </div>
-
     </div>
 
 </template>
 
 <script>
 // import axios from 'axios';
+// import { ref, nextTick, onMounted } from 'vue'
 import { ref } from 'vue'
 import { ElTable, ElButton } from 'element-plus'
 
@@ -155,6 +184,11 @@ export default {
                 name: '',
                 region: '',
             },
+            requests: [
+                { 'requester_id': 'kyrieirving', 'group_id': '123456789abcdefg', 'time': '2024/5/12-21:25:30' },
+                { 'requester_id': 'lebronjames', 'group_id': '987654321abcdefg', 'time': '2024/5/12-21:30:45' },
+                { 'requester_id': 'kevindurant', 'group_id': 'abcdefg123456789', 'time': '2024/5/12-21:35:15' }
+            ],
             multipleTableRef: ref(null),
             multipleSelection: ref([]),
         };
@@ -163,6 +197,33 @@ export default {
         createGroup() {
             console.log("创建了一个群组");
             this.dialogFormVisible = false;
+        },
+        showRequest() {
+            // 向 localhost 发送请求
+            // fetch('http://localhost/refresh')
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         this.requests.append(data); // 将服务器返回的数据赋值给 requests 数组
+            //     })
+            //     .catch(error => {
+            //         console.error('Error fetching requests:', error);
+            //     });
+            console.log("向proxy请求申请")
+        },
+        permit(userId, groupId, allowed) {
+            if (allowed) {
+                console.log("同意");
+            } else {
+                console.log("不同意");
+            }
+        },
+        handleAll(allowed) {
+            for (const request of this.requests) {
+                this.permit(request[0], request[2], allowed);
+            }
+        },
+        refresh() {
+            console.log("刷新");
         },
         toggleGroups(groupId) {
             if (this.expandedGroups.includes(groupId)) {
@@ -186,6 +247,12 @@ export default {
         },
         remove(fileName, fileHash) {
             console.log(`移除了${fileName}-${fileHash}`);
+        },
+        upload() {
+            console.log("上传文件");
+        },
+        disband() {
+            console.log("解散群组");
         }
     },
     computed: {
@@ -208,6 +275,9 @@ export default {
         }
     },
     // mounted() {
+    //     // nextTick(() => {
+    //     //     this.multipleTableRef = this.$refs.multipleTableRef;
+    //     // });
     //     onMounted(() => {
     //         this.multipleTableRef = this.$refs.multipleTableRef;
     //     });
@@ -263,7 +333,9 @@ export default {
 .search-bar-container {
     display: flex;
     justify-content: space-evenly;
-    padding: 30px 20px;
+    padding: 0px 20px;
+    padding-top: 30px;
+    padding-bottom: 20px;
     background-color: #f0f6fa;
 }
 
@@ -291,7 +363,7 @@ export default {
     display: flex;
 }
 
-.create-button {
+.handleall-button, .create-button {
     padding: 10px 20px;
     margin-left: 10px;
     border: none;
@@ -301,6 +373,45 @@ export default {
     cursor: pointer;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     font-weight: 700;
+}
+
+.handleall-button {
+    height: 38px;
+    background-color: #81afb4;
+    margin-bottom: 10px;
+}
+
+.requests-box {
+    display: flex;
+    justify-content: space-between;
+    padding: 0px 20px;
+    padding-bottom: 10px;
+    background-color: #f0f6fa;
+}
+
+.requests {
+    width: 80%;
+}
+
+.handleAll {
+    display: flex;
+    flex-direction: column;
+}
+
+.refresh-button {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    background-color: #234d64;
+    border-radius: 5px;
+    height: 85px;
+    width: 50px;
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
 }
 
 .no-group {
