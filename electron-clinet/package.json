@@ -17,6 +17,7 @@
     "axios": "^1.6.8",
     "chart.js": "^4.4.2",
     "core-js": "^3.8.3",
+    "dexie": "^4.0.4",
     "element-plus": "^2.7.2",
     "vue": "^3.2.13",
     "vue-data-ui": "^2.1.43",
