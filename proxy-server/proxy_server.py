@@ -5,14 +5,13 @@ import pymysql
 import requests
 import json
 
-
 app = Flask(__name__)
 CORS(app)
 
 connection = pymysql.connect(
     host="localhost",
     user="root",
-    password="Doncic77++",
+    password="1234",
     db="safeipfs",
     charset="utf8mb4",
     cursorclass=pymysql.cursors.DictCursor,
@@ -122,12 +121,15 @@ def logout():
 @app.route("/get_address", methods=["POST"])
 def get_address():
     data = request.json
+    print(data)
     group_id = data["group_id"]
     requester_id = data["requester_id"]
     requester_public_key = data["requester_public_key"]
+    current_time = data["current_time"]
 
     try:
         with connection.cursor() as cursor:
+            print(11111)
             # 查询 group owner
             sql = """
                 SELECT owner_id, encrypted_file_key, owner_public_key, capsule
@@ -136,16 +138,21 @@ def get_address():
             """
             cursor.execute(sql, (group_id,))
             group_info = cursor.fetchone()
+            print(22222)
 
             if group_info:
+                print(4444)
                 owner_id = group_info["owner_id"]
+                print(owner_id)
+                print(current_time)
                 sql = """
-                    INSERT INTO request_cache (owner_id, requester_id, requester_public_key, group_id)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO request_cache (owner_id, requester_id, requester_public_key, group_id, time)
+                    VALUES (%s, %s, %s, %s, %s)
                 """
                 cursor.execute(
-                    sql, (owner_id, requester_id, requester_public_key, group_id)
+                    sql, (owner_id, requester_id, requester_public_key, group_id, current_time)
                 )
+                print(33333)
                 connection.commit()
                 print("Request cached.")
                 return jsonify({"message": "Request cached."}), 200
@@ -160,7 +167,7 @@ def get_requests():
     user_id = request.json.get("user_id")
     try:
         with connection.cursor() as cursor:
-            sql = "SELECT requester_id, group_id FROM request_cache WHERE owner_id = %s"
+            sql = "SELECT requester_id, group_id, time FROM request_cache WHERE owner_id = %s"
             cursor.execute(sql, (user_id,))
             results = cursor.fetchall()
             return jsonify({"requests": results})
@@ -225,9 +232,30 @@ def calculate_cfrag():
                 (owner_id, requester_id, group_id, bytes(cfrag).hex()),
             )
             connection.commit()
+            # cursor = connection.cursor()
+            # 查询指定 group_id 对应的 requesters_id
+            cursor.execute("SELECT requesters_id FROM user_groups WHERE group_id = %s", (group_id,))
+            result = cursor.fetchone()
+
+            if result:
+                current_requesters_id = result['requesters_id']
+                if current_requesters_id is not None:
+                    # 如果原始 requesters_id 不为空，则添加新的 user_id
+                    new_requesters_id = current_requesters_id + ',' + requester_id
+                else:
+                    # 如果原始 requesters_id 为空，则直接使用新的 user_id
+                    new_requesters_id = requester_id
+                # 更新数据库中的 requesters_id
+                cursor.execute("UPDATE user_groups SET requesters_id = %s WHERE group_id = %s",
+                               (new_requesters_id, group_id))
+                connection.commit()
+                print("Requesters ID updated successfully.")
+            else:
+                print("Group ID not found in the database.")
             return jsonify({"message": "Cfrag calculated and stored"}), 200
         except:
             return jsonify({"error": "Error calculating cfrag"}), 500
+
 
 @app.route('/get_approved_requests', methods=['POST'])
 def get_approved_requests():
@@ -244,6 +272,7 @@ def get_approved_requests():
             return jsonify({'requests': results})
     finally:
         pass
+
 
 @app.route('/process_approved_request', methods=['POST'])
 def process_approved_request():
@@ -282,10 +311,70 @@ def process_approved_request():
     finally:
         pass
 
+
+@app.route('/upload_file', methods=['POST'])
+def upload_file():
+    data = request.json
+    group_id = data['group_id']
+    ipfs_hash = data['ipfs_hash']
+    file_name = data['file_name']
+    try:
+        with connection.cursor() as cursor:
+            sql = """
+            INSERT INTO files (group_id, ipfs_hash, file_name)
+            VALUES (%s, %s, %s)
+            """
+            cursor.execute(sql, (group_id, ipfs_hash, file_name))
+            connection.commit()
+            return jsonify({"message": "File added successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": "Error adding file"}), 500
+
+
+@app.route('/request_group_files', methods=['POST'])
+def request_group_files():
+    data = request.json
+    groups_ids = data['groups_ids']
+    requester_id = data['user_id']
+    try:
+        with connection.cursor() as cursor:
+            files_info = {}
+
+            for group_id in groups_ids:
+                sql = """
+                SELECT *
+                FROM user_groups
+                WHERE group_id = %s
+                """
+                cursor.execute(sql, (group_id,))
+                group_info = cursor.fetchone()
+
+                if group_info:
+                    requesters_id = group_info['requesters_id'].split(',')
+                    if requester_id in requesters_id:
+                        sql = """
+                        SELECT ipfs_hash, file_name
+                        FROM files
+                        WHERE group_id = %s
+                        """
+                        cursor.execute(sql, (group_id,))
+                        files = cursor.fetchall()
+                        files_info[group_id] = files
+                    else:
+                        pass
+                else:
+                    pass
+
+            return jsonify({'files_info': files_info}), 200
+    except Exception as e:
+        return jsonify({"error": "Error processing request"}), 500
+
+
 @app.route('/test', methods=['GET'])
 def test():
     print("test")
+    return jsonify({"message": "Test successful"})
 
 
 if __name__ == "__main__":
-    app.run(port=5001, debug=True, host='0.0.0.0')
+    app.run(port=5000, debug=True, host='0.0.0.0')
