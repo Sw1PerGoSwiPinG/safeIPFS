@@ -22,7 +22,7 @@ export async function SearchFromKeyTable(group_id) {
     try {
         const result = await db.KeyTable.where('group_id').equals(group_id).toArray();
         console.log('Search result: ', result);
-        return result;
+        return result[0];
     } catch (error) {
         console.error('Error searching data: ', error);
         return [];
@@ -39,8 +39,19 @@ export async function DeleteFromKeyTable(group_id) {
     }
 }
 
+// 删除KeyTable中的所有数据
+export async function ClearKeyTable() {
+    try {
+        await db.KeyTable.clear();
+        console.log('KeyTable cleared successfully.');
+    } catch (error) {
+        console.error('Error clearing KeyTable: ', error);
+    }
+}
+
 export default {
     AddKeyToTable,
     SearchFromKeyTable,
-    DeleteFromKeyTable
+    DeleteFromKeyTable,
+    ClearKeyTable
 };
