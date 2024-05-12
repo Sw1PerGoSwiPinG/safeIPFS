@@ -50,19 +50,23 @@
 
         <div class="requests-box">
             <div class="requests">
-                <el-table
-                    :data="requests"
-                    style="width: 100%;"
-                    >
+                <el-table :data="requests" style="width: 100%;">
                     <el-table-column type="index" width="30" />
-                    <el-table-column label="申请者" prop="requester_id"/>
-                    <el-table-column label="群组ID" prop="group_id"/>
-                    <el-table-column label="申请时间" prop="time"/>
+                    <el-table-column label="申请者" prop="requester_id" />
+                    <el-table-column label="群组ID" prop="group_id" />
+                    <el-table-column label="申请时间" prop="time" />
                     <el-table-column label="操作">
                         <template #default="{ row }">
                             <div>
+<<<<<<< HEAD
                                 <el-button @click="permit(row.requester_id, row.group_id, true)" type="info" plain style="width: 40%;">同意</el-button>
                                 <el-button @click="permit(row.requester_id, row.group_id, false)" type="info" plain style="width: 40%;">拒绝</el-button>
+=======
+                                <el-button @click="permit(row[0], row[2], true)" type="info" plain
+                                    style="width: 40%;">同意</el-button>
+                                <el-button @click="permit(row[0], row[2], false)" type="info" plain
+                                    style="width: 40%;">拒绝</el-button>
+>>>>>>> c495d2a57ee5b02cc1c2c2fb7bc5c70121dfdbdc
                             </div>
                         </template>
                     </el-table-column>
@@ -93,11 +97,12 @@
                     </div>
                     <div class="description" v-else>无介绍</div>
                     <div class="buttons">
-                        <el-button type="primary" plain class="upload-button">
+                        <input type="file" plain class="upload-button" @change="uploadFile($event, group.info.id)">
+                        <!-- <el-button type="primary" plain class="upload-button" @click="uploadFile">
                             <el-icon color="#409efc">
                                 <UploadFilled style="width: 20px;" />
                             </el-icon> 上传文件
-                        </el-button>
+                        </el-button> -->
                         <el-button type="danger" plain class="disband-button">
                             <el-icon color="#f56c6c">
                                 <RemoveFilled style="width: 20px;" />
@@ -148,7 +153,8 @@ import axios from 'axios';
 import { ref } from 'vue'
 import { ElTable, ElButton } from 'element-plus'
 import CryptoService from '@/services/CryptoService';
-import { AddKeyToTable } from '@/services/DataBase';
+import { AddKeyToTable, SearchFromKeyTable } from '@/services/DataBase';
+import { create } from 'kubo-rpc-client';
 
 export default {
     components: {
@@ -156,18 +162,8 @@ export default {
     },
     data() {
         return {
+            ipfs: null,
             ownerGroup: [
-                {
-                    "info": {
-                        "id": "123456789",
-                        "name": "豆瓣top100电影",
-                        "description": "用来存放一些电影",
-                    },
-                    "files": [
-                        ["肖申克的救赎.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560", "26"],
-                        ["霸王别姬.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6", "18"]
-                    ]
-                },
                 {
                     "info": {
                         "id": "987654321",
@@ -178,14 +174,6 @@ export default {
                         ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560", "26"],
                         ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6", "18"]
                     ]
-                },
-                {
-                    "info": {
-                        "id": "1234abcdefg",
-                        "name": "其他电影",
-                        "description": "",
-                    },
-                    "files": []
                 }
             ],
             expandedGroups: [],
@@ -340,12 +328,70 @@ export default {
         remove(fileName, fileHash) {
             console.log(`移除了${fileName}-${fileHash}`);
         },
-        upload() {
-            console.log("上传文件");
+        async uploadFile(event, groupId) {
+            console.log(groupId);
+            const file = event.target.files[0];
+
+            if (!file) {
+                return;
+            }
+
+            const result = await SearchFromKeyTable(groupId);
+            // const result = results[0].file_key;
+            console.log(result.file_key);
+            var file_key = await this.importKeyFromHex(result.file_key);
+
+            const reader = new FileReader();
+
+            // 将文件读取为Blob对象
+            reader.onload = async () => {
+                const blob = new Blob([reader.result], { type: file.type });
+
+                console.log('file_key:', file_key); // Ensure the key is logged after it's generated
+
+                const encryptedBlob = await CryptoService.encryptFile(blob, file_key);
+
+                this.progress = 0; // Reset progress for new upload
+                try {
+                    const fileAdded = await this.ipfs.add(encryptedBlob, {
+                        progress: (bytes) => {
+                            this.progress = (bytes / blob.size) * 100;
+                        }
+                    });
+
+                    // 获取cid
+                    const ipfs_hash = fileAdded.cid;
+                    console.log('File uploaded with CID:', ipfs_hash.toString());
+                    // 获取文件名
+                    const file_name = file.name;
+                    console.log('File name:', file_name);
+
+                    try {
+                        const response = await axios.post('http://localhost:5000/upload_file', {
+                            group_id: groupId,
+                            file_name: file_name,
+                            ipfs_hash: ipfs_hash.toString(),
+                            // file_size: file.size
+                        })
+                        console.log(response.data.message);
+                        this.ownerGroup.forEach(group => {
+                            if (group.info.id === groupId) {
+                                group.files.push([file_name, new Date().toLocaleDateString(), ipfs_hash.toString(), (file.size / 1024).toFixed(2)]);
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error uploading the file:', error);
+                    }
+                } catch (error) {
+                    console.error('Error uploading the file:', error);
+                }
+            };
+
+            reader.readAsArrayBuffer(file); // 读取文件内容
         },
         disband() {
             console.log("解散群组");
-        }
+        },
     },
     computed: {
         totalFilesCount() {
@@ -366,8 +412,16 @@ export default {
             return (totalSize / 1024).toFixed(2) + " GiB";
         }
     },
+<<<<<<< HEAD
     mounted() {
         this.refresh();
+=======
+    async mounted() {
+        // Initialize IPFS
+        this.ipfs = create('http://localhost:5001/api/v0');
+        // 遍历数据库，获取所有群组信息
+
+>>>>>>> c495d2a57ee5b02cc1c2c2fb7bc5c70121dfdbdc
     }
     // mounted() {
     //     // nextTick(() => {
@@ -414,7 +468,8 @@ export default {
     display: flex;
 }
 
-.handleall-button, .create-button {
+.handleall-button,
+.create-button {
     padding: 10px 20px;
     margin-left: 10px;
     border: none;

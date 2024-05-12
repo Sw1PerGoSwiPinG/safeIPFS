@@ -138,6 +138,17 @@ export default {
         };
     },
     methods: {
+        async sendUserId() {
+            const response = await axios.post('http://localhost:5000/request_group_files', {
+                userId: parseInt(this.$route.params.userId)
+            });
+            if (response.status === 200) {
+                // this.memberGroup = response.data.groups;
+                console.log(response.data.files)
+            } else {
+                alert("请求失败，请联系开发人员");
+            }
+        },
         async joinGroup() {
             try {
                 const response = await axios.post('http://localhost:5000/request_access', {
@@ -195,6 +206,10 @@ export default {
 
             return formattedDateTime;
         }
+    },
+    mounted() {
+        console.log("start send!");
+        this.sendUserId();
     }
 }
 </script>

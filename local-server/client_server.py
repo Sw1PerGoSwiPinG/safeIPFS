@@ -40,8 +40,8 @@ def get_db_connection():
 # 登录路由
 @app.route("/login", methods=["POST"])
 def login():
-    username = request.json["username"]
-    password = request.json["password"]
+    username = request.json.get("username")
+    password = request.json.get("password")
     # 计算密码的SHA-256哈希值
     password_hash = hashlib.sha256(password.encode()).hexdigest()
     ip_address = socket.gethostbyname(socket.gethostname())
@@ -68,10 +68,8 @@ def login():
 
 @app.route("/register", methods=["POST"])
 def register():
-    print(request.json)
-
-    username = request.json["username"]
-    password = request.json["password"]
+    username = request.json.get("username")
+    password = request.json.get("password")
     password_hash = hashlib.sha256(password.encode()).hexdigest()
     ip_address = socket.gethostbyname(socket.gethostname())
 
@@ -140,15 +138,13 @@ def create_group():
     )
     conn.commit()
     conn.close()
-    return jsonify({"message": "Data saved", "group_id": group_id, "public_key": bytes(owner_public_key).hex(),
-                    "private_key": owner_secret_key.to_secret_bytes().hex()})
+    return jsonify({"message": "Data saved", "group_id": group_id, "public_key": bytes(owner_public_key).hex(), "private_key": owner_secret_key.to_secret_bytes().hex()})
 
 
 @app.route("/request_access", methods=["POST"])
 def request_access():
     group_id = request.json.get("group_id")
     user_id = request.json.get("user_id")
-    current_time = request.json.get("current_time")
     requester_secret_key = SecretKey.random()
     requester_public_key = requester_secret_key.public_key()
     conn = get_db_connection()
@@ -194,7 +190,6 @@ def request_access():
             "requester_id": user_id,
             "requester_public_key": result["public_key"],
             "group_id": group_id,
-            "current_time": current_time,
         }
     response = requests.post(f"http://{proxy_address}:{proxy_port}/get_address", json=data)
     if response.status_code == 200:
@@ -335,49 +330,6 @@ def process_approved_request():
         ),
         200,
     )
-
-
-@app.route('/upload_file', methods=['POST'])
-def upload_file():
-    data = request.json
-    group_id = data['group_id']
-    ipfs_hash = data['ipfs_hash']
-    file_name = data['file_name']
-    data_ = {
-        'group_id': group_id,
-        'ipfs_hash': ipfs_hash,
-        'file_name': file_name,
-    }
-    response = requests.post(f'http://{proxy_address}:{proxy_port}/add_file', json=data_)
-    if response.status_code == 200:
-        return jsonify({'message': 'File added successfully!'})
-
-
-@app.route('/request_group_files', methods=['POST'])
-def request_group_files():
-    data = request.json
-    groups_ids = []
-    requester_id = data['userId']
-    conn = get_db_connection()
-    c = conn.cursor()
-
-    c.execute("SELECT group_id FROM KeyTable WHERE file_key IS NOT NULL")
-    rows = c.fetchall()
-
-    for row in rows:
-        groups_ids.append(row[0])
-
-    data_ = {
-        'groups_ids': groups_ids,
-        'requester_id': requester_id,
-    }
-    response = requests.post(f'http://{proxy_address}:{proxy_port}/request_group_files', json=data_)
-    print(json.loads(response.text)['files_info'])
-    if response.status_code == 200:
-        return jsonify(
-            {'message': 'Request submitted successfully!', 'files': json.loads(response.text)['files_info']}), 200
-    else:
-        return jsonify({'message': 'Request failed!'}), 400
 
 
 if __name__ == "__main__":
