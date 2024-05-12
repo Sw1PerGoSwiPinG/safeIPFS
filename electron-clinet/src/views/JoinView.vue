@@ -10,23 +10,17 @@
                 <button @click="dialogFormVisible = true" class="create-button"><span style="color: #69c4cd;">+</span> 加入群组</button>
             </div>
 
-            <el-dialog v-model="dialogFormVisible" title="Shipping address" width="500">
+            <el-dialog v-model="dialogFormVisible" title="申请信息" width="500">
                 <el-form :model="form">
-                    <el-form-item label="Promotion name" :label-width="formLabelWidth">
-                        <el-input v-model="form.name" autocomplete="off" />
-                    </el-form-item>
-                    <el-form-item label="Zones" :label-width="formLabelWidth">
-                        <el-select v-model="form.region" placeholder="Please select a zone">
-                            <el-option label="Zone No.1" value="shanghai" />
-                            <el-option label="Zone No.2" value="beijing" />
-                        </el-select>
+                    <el-form-item label="群组代号" :label-width="formLabelWidth">
+                        <el-input v-model="form.groupId" autocomplete="off" />
                     </el-form-item>
                 </el-form>
                 <template #footer>
                     <div class="dialog-footer">
-                        <el-button @click="dialogFormVisible = false">Cancel</el-button>
+                        <el-button @click="dialogFormVisible = false">取消</el-button>
                         <el-button type="primary" @click="joinGroup()">
-                            Confirm
+                            确定
                         </el-button>
                     </div>
                 </template>
@@ -99,7 +93,7 @@
 </template>
 
 <script>
-// import axios from 'axios';
+import axios from 'axios';
 
 export default {
     data() {
@@ -138,15 +132,28 @@ export default {
             ],
             dialogFormVisible: false,
             form: {
-                name: '',
-                region: '',
+                groupId: '',
             },
             expandedGroups: [],
         };
     },
     methods: {
-        joinGroup() {
-            console.log("加入了一个群组");
+        async joinGroup() {
+            try {
+                const response = await axios.post('http://localhost:5000/request_access', {
+                        group_id: this.form.groupId,
+                        user_id: this.$route.params.userId,
+                        current_time: this.getCurrentTime(),
+                    })                
+                    if (response.status === 200) {
+                        alert("已申请");
+                    } else {
+                        alert("申请失败");
+                    }
+                } catch (error) {
+                    console.log(error);
+                    alert("出现错误，联系开发人员");
+            }
             this.dialogFormVisible = false;
         },
         toggleFiles(groupId) {
@@ -171,6 +178,22 @@ export default {
         },
         download(fileName, fileHash) {
             console.log(`下载了${fileName}-${fileHash}`);
+        },
+        getCurrentTime() {
+            const currentDate = new Date();
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth() + 1; // 月份是从 0 开始的，所以要加 1
+            const day = currentDate.getDate();
+            const hours = currentDate.getHours();
+            const minutes = currentDate.getMinutes();
+            const seconds = currentDate.getSeconds();
+
+            const formattedDate = `${year}/${month}/${day}`;
+            const formattedTime = `${hours}:${minutes}:${seconds}`;
+            const formattedDateTime = `${formattedDate}-${formattedTime}`;
+
+            return formattedDateTime;
         }
     }
 }

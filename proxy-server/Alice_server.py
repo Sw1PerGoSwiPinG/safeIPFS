@@ -24,7 +24,7 @@ CORS(app)
 # app.config["SESSION_TYPE"] = "filesystem"
 # Session(app)
 port = 5000
-proxy_address = "localhost"
+proxy_address = "10.122.236.111"
 # conn = sqlite3.connect("owner.db")
 
 import sqlite3
@@ -67,9 +67,13 @@ def login():
 
 @app.route("/register", methods=["POST"])
 def register():
+    print(request.json)
+
     username = request.json["username"]
     password = request.json["password"]
-    print("here!", username, password)
+
+    # print("here!", username)
+    # password = "12345"
     password_hash = hashlib.sha256(password.encode()).hexdigest()
     ip_address = socket.gethostbyname(socket.gethostname())
 
@@ -143,6 +147,7 @@ def create_group():
 def request_access():
     group_id = request.json.get("group_id")
     user_id = request.json.get("user_id")
+    current_time = request.json.get("current_time")
     requester_secret_key = SecretKey.random()
     requester_public_key = requester_secret_key.public_key()
     conn = get_db_connection()
@@ -188,6 +193,7 @@ def request_access():
             "requester_id": user_id,
             "requester_public_key": result["public_key"],
             "group_id": group_id,
+            "current_time": current_time,
         }
     response = requests.post(f"http://{proxy_address}:5000/get_address", json=data)
     if response.status_code == 200:

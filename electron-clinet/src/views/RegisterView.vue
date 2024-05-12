@@ -69,12 +69,10 @@ export default {
         },
         async register() {
             try {
-                const requestData = {
+                const response = await axios.post('http://localhost:5000/register', {
                     username: this.username,
-                    password: this.password
-                };
-
-                const response = await axios.post('http://localhost:5000/register', requestData);
+                    password: this.password,
+                });
                 console.log(response.data);
 
                 if (response.data.message === "Register successful") {

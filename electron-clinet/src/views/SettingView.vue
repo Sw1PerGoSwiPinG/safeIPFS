@@ -4,9 +4,9 @@
         <div class="user-profile">
             <img class="avatar" :src="user.avatarUrl" alt="用户头像" />
             <div class="user-details">
-                <h1 class="user-name">{{ user.name }}</h1>
+                <h1 class="user-name">{{ $route.params.userId }}</h1>
                 <div class="user-email"><b>📫 您的注册邮箱为 </b>{{ user.email }}</div>
-                <div class="user-id">🥳 感谢您成为SafeIPFS的 <b>第 {{ $route.params.userId }} 位</b> 用户</div>
+                <div class="user-id">🥳 感谢您成为SafeIPFS的 <b>第 1,267,315 位</b> 用户</div>
                 <div class="user-tips">📅 下面是您的 <b>密钥信息</b> 您可以查看或删除 </div>
             </div>
         </div>

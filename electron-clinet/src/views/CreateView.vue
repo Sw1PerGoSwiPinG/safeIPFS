@@ -61,8 +61,8 @@
                     <el-table-column label="操作">
                         <template #default="{ row }">
                             <div>
-                                <el-button @click="permit(row[0], row[2], true)" type="info" plain style="width: 40%;">同意</el-button>
-                                <el-button @click="permit(row[0], row[2], false)" type="info" plain style="width: 40%;">拒绝</el-button>
+                                <el-button @click="permit(row.requester_id, row.group_id, true)" type="info" plain style="width: 40%;">同意</el-button>
+                                <el-button @click="permit(row.requester_id, row.group_id, false)" type="info" plain style="width: 40%;">拒绝</el-button>
                             </div>
                         </template>
                     </el-table-column>
@@ -194,11 +194,7 @@ export default {
                 group_name: '',
                 group_description: '',
             },
-            requests: [
-                { 'requester_id': 'kyrieirving', 'group_id': '123456789abcdefg', 'time': '2024/5/12-21:25:30' },
-                { 'requester_id': 'lebronjames', 'group_id': '987654321abcdefg', 'time': '2024/5/12-21:30:45' },
-                { 'requester_id': 'kevindurant', 'group_id': 'abcdefg123456789', 'time': '2024/5/12-21:35:15' }
-            ],
+            requests: [],
             multipleTableRef: ref(null),
             multipleSelection: ref([]),
         };
@@ -275,6 +271,52 @@ export default {
             }
 
         },
+        async permit(userId, groupId, allowed) {
+            if (allowed) {                
+                try {
+                    const response = await axios.post('http://localhost:5000/get_public_key', {
+                        owner_id: this.$route.params.userId,
+                        requester_id: userId,
+                        group_id: groupId,
+                    })                
+                    if (response.status === 200) {
+                        alert("已同意");
+                    } else {
+                        alert("同意失败");
+                    }
+                } catch (error) {
+                    console.log(error);
+                    alert("出现错误，联系开发人员");
+                }
+            } else {
+                alert("已拒绝");
+            }
+
+            console.log(userId)
+            console.log(groupId)
+            // 找到要移除的数据的索引
+            const index = this.requests.findIndex(request => request.requester_id === parseInt(userId) && request.group_id === groupId);
+            
+            if (index !== -1) {
+                // 如果找到了匹配的数据，则移除
+                this.requests.splice(index, 1);
+                console.log(`已成功移除请求：requester_id=${userId}, group_id=${groupId}`);
+            } else {
+                alert("未成功移除")
+            }
+        },
+        async refresh() {
+            try {
+                const response = await axios.post('http://localhost:5000/get_requests', {
+                    user_id: this.$route.params.userId,
+                })
+                console.log(response.data.requests);
+                this.requests = response.data.requests;
+            } catch (error) {
+                console.log(error);
+                alert("出现错误，联系开发人员");
+            }            
+        },
         toggleGroups(groupId) {
             if (this.expandedGroups.includes(groupId)) {
                 this.expandedGroups = this.expandedGroups.filter(id => id !== groupId);
@@ -324,6 +366,9 @@ export default {
             return (totalSize / 1024).toFixed(2) + " GiB";
         }
     },
+    mounted() {
+        this.refresh();
+    }
     // mounted() {
     //     // nextTick(() => {
     //     //     this.multipleTableRef = this.$refs.multipleTableRef;
@@ -332,50 +377,6 @@ export default {
     //         this.multipleTableRef = this.$refs.multipleTableRef;
     //     });
     // },
-    // mounted() {
-    //     this.fetchPublishedProjects();
-    //     this.fetchRaisedProjects();
-    // },
-    // methods: {
-    //     async fetchPublishedProjects() {
-    //         const currentUserId = this.$route.params.userId;
-    //         try {
-    //             const response = await axios.get(`http://localhost:5000/my_published_projects?id=${currentUserId}`);
-    //             this.publishedProjects = response.data.projects;
-    //             this.publishedProjects.forEach(project => {
-    //                 project.photos = require(`@/assets/projects/${JSON.parse(project.photos)[0]}`)
-
-    //                 // console.log(typeof parseInt(project.current_amount));
-    //                 project.current_amount = parseInt(project.current_amount);
-    //                 project.target_amount = parseInt(project.target_amount);
-    //             })
-    //         } catch (error) {
-    //             console.error('Error fetching projects:', error);
-    //         }
-    //     },
-    //     async fetchRaisedProjects() {
-    //         const currentUserId = this.$route.params.userId;
-    //         try {
-    //             const response = await axios.get(`http://localhost:5000/my_raised_projects?id=${currentUserId}`);
-    //             this.raisedProjects = response.data.projects;
-    //             this.raisedProjects.forEach(project => {
-    //                 project.photos = require(`@/assets/projects/${JSON.parse(project.photos)[0]}`)
-
-    //                 // console.log(typeof parseInt(project.current_amount));
-    //                 project.current_amount = parseInt(project.current_amount);
-    //                 project.target_amount = parseInt(project.target_amount);
-    //             })
-    //         } catch (error) {
-    //             console.error('Error fetching projects:', error);
-    //         }
-    //     },
-    //     getRandomColor() {
-    //         const colors = ['#FF6347', '#4682B4', '#32CD32', '#FFD700', '#6A5ACD', '#FF4500', '#20B2AA'];
-    //         const randomIndex = Math.floor(Math.random() * colors.length);
-    //         return colors[randomIndex];
-    //         // return '#' + Math.floor(Math.random() * 16777215).toString(16);
-    //     }
-    // }
 }
 </script>
 
