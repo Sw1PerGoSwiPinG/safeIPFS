@@ -28,43 +28,36 @@
 </template>
 
 <script>
-// import axios from 'axios';
+import axios from 'axios';
 
 export default {
     name: "LoginView",
     data: () => {
         return {
-            username: 'hello SafeIPFS :)',
+            username: '',
             password: ''
         }
     },
     methods: {
-        login() { console.log(this.username); this.$router.push(`${this.username}/home`); },
         register() { this.$router.push("/register"); },
-        // async login() {
-        //     try {
-        //         const response = await axios.post('http://localhost:5000/user-login', {
-        //             username: this.username,
-        //             password: this.password
-        //         })
-        //         console.log(response.data);
-                
-        //         if (response.data.status === true) {
-        //             const currentUserId = response.data.id;
-        //             // this.setCurrentUserId(currentUserId);
-        //             // this.$router.push(`${currentUserId}/home`);
-        //             this.$router.push(`${currentUserId}/home`);
-        //         } else {
-        //             alert("用户名或密码错误，请重新输入");
-        //             this.username = '';
-        //             this.password = '';
-        //         }
-        //     } catch (error) {
-        //         console.log(error);
-        //         alert("出现错误，联系开发人员");
-        //     }
-        // }
-
+        async login() {
+            try {
+                const response = await axios.post('http://localhost:5000/login', {
+                    username: this.username,
+                    password: this.password
+                })                
+                if (response.data.message === "Login successful") {
+                    this.$router.push(`${this.username}/home`);
+                } else {
+                    alert("用户名或密码错误，请重新输入");
+                    this.username = '';
+                    this.password = '';
+                }
+            } catch (error) {
+                console.log(error);
+                alert("出现错误，联系开发人员");
+            }
+        }
     },
 }
 </script>

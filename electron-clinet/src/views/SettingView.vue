@@ -17,8 +17,34 @@
             <div style="width: 40px;"></div>
 
             <div class="create">
-                <button class="create-button">修改个人信息</button>
+                <button class="create-button" @click="dialogFormVisible = true">修改个人信息</button>
             </div>
+``
+            <el-dialog v-model="dialogFormVisible" title="修改信息" width="500">
+                    <el-form :model="form">
+                        <el-form-item label="原密码" :label-width="formLabelWidth" style="margin-bottom: 50px;">
+                            <el-input v-model="form.origin_passwd" autocomplete="off" type="password"/>
+                        </el-form-item>
+                        <el-form-item label="用户名" :label-width="formLabelWidth">
+                            <el-input v-model="form.username" autocomplete="off" />
+                        </el-form-item>
+                        <el-form-item label="新密码" :label-width="formLabelWidth">
+                            <el-input v-model="form.password" autocomplete="off" type="password"/>
+                        </el-form-item>
+                        <el-form-item label="新邮箱" :label-width="formLabelWidth">
+                            <el-input v-model="form.email" autocomplete="off" />
+                        </el-form-item>
+                    </el-form>
+                    <template #footer>
+                        <div class="dialog-footer">
+                            <el-button @click="dialogFormVisible = false">取消</el-button>
+                            <el-button type="primary" @click="changeUserInfo()">
+                                确认
+                            </el-button>
+                        </div>
+                    </template>
+                </el-dialog>
+
         </div>
 
         <div class="warning-box">
@@ -103,6 +129,13 @@ export default {
                 }
             ],
             expandedGroups: [],
+            dialogFormVisible: false,
+            form: {
+                origin_passwd: '',
+                username: '',
+                password: '',
+                mail: '',
+            },
         };
     },
     methods: {
@@ -116,6 +149,9 @@ export default {
         getAvatarUrl() {
             const avatar = "default-avatar.jpg"
             this.user.avatarUrl = require(`@/assets/avatars/${avatar}`)
+        },
+        changeUserInfo() {
+            this.dialogFormVisible = false;
         }
     },
     mounted() {

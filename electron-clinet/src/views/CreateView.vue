@@ -48,6 +48,35 @@
             </div>
         </div>
 
+        <div class="requests-box">
+            <div class="requests">
+                <el-table
+                    :data="requests"
+                    style="width: 100%;"
+                    >
+                    <el-table-column type="index" width="30" />
+                    <el-table-column label="申请者" prop="requester_id"/>
+                    <el-table-column label="群组ID" prop="group_id"/>
+                    <el-table-column label="申请时间" prop="time"/>
+                    <el-table-column label="操作">
+                        <template #default="{ row }">
+                            <div>
+                                <el-button @click="permit(row[0], row[2], true)" type="info" plain style="width: 40%;">同意</el-button>
+                                <el-button @click="permit(row[0], row[2], false)" type="info" plain style="width: 40%;">拒绝</el-button>
+                            </div>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+            <div class="handleAll">
+                <button class="handleall-button" @click="handleAll(true)">全部同意</button>
+                <button class="handleall-button" @click="handleAll(false)">全部拒接</button>
+            </div>
+            <div>
+                <div class="refresh-button" @click="refresh()">刷新<br><span style="font-size: 25px;">🆕</span></div>
+            </div>
+        </div>
+
         <h1 class="no-group" v-if="ownerGroup.length === 0">您还没有创建群组，点击右上角 <b>创建</b> 🤗</h1>
 
         <div v-else>
@@ -109,13 +138,13 @@
                 </div>
             </div>
         </div>
-
     </div>
 
 </template>
 
 <script>
 import axios from 'axios';
+// import { ref, nextTick, onMounted } from 'vue'
 import { ref } from 'vue'
 import { ElTable, ElButton } from 'element-plus'
 import CryptoService from '@/services/CryptoService';
@@ -165,6 +194,11 @@ export default {
                 group_name: '',
                 group_description: '',
             },
+            requests: [
+                { 'requester_id': 'kyrieirving', 'group_id': '123456789abcdefg', 'time': '2024/5/12-21:25:30' },
+                { 'requester_id': 'lebronjames', 'group_id': '987654321abcdefg', 'time': '2024/5/12-21:30:45' },
+                { 'requester_id': 'kevindurant', 'group_id': 'abcdefg123456789', 'time': '2024/5/12-21:35:15' }
+            ],
             multipleTableRef: ref(null),
             multipleSelection: ref([]),
         };
@@ -263,6 +297,12 @@ export default {
         },
         remove(fileName, fileHash) {
             console.log(`移除了${fileName}-${fileHash}`);
+        },
+        upload() {
+            console.log("上传文件");
+        },
+        disband() {
+            console.log("解散群组");
         }
     },
     computed: {
@@ -285,6 +325,9 @@ export default {
         }
     },
     // mounted() {
+    //     // nextTick(() => {
+    //     //     this.multipleTableRef = this.$refs.multipleTableRef;
+    //     // });
     //     onMounted(() => {
     //         this.multipleTableRef = this.$refs.multipleTableRef;
     //     });
@@ -340,7 +383,9 @@ export default {
 .search-bar-container {
     display: flex;
     justify-content: space-evenly;
-    padding: 30px 20px;
+    padding: 0px 20px;
+    padding-top: 30px;
+    padding-bottom: 20px;
     background-color: #f0f6fa;
 }
 
@@ -368,7 +413,7 @@ export default {
     display: flex;
 }
 
-.create-button {
+.handleall-button, .create-button {
     padding: 10px 20px;
     margin-left: 10px;
     border: none;
@@ -378,6 +423,45 @@ export default {
     cursor: pointer;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     font-weight: 700;
+}
+
+.handleall-button {
+    height: 38px;
+    background-color: #81afb4;
+    margin-bottom: 10px;
+}
+
+.requests-box {
+    display: flex;
+    justify-content: space-between;
+    padding: 0px 20px;
+    padding-bottom: 10px;
+    background-color: #f0f6fa;
+}
+
+.requests {
+    width: 80%;
+}
+
+.handleAll {
+    display: flex;
+    flex-direction: column;
+}
+
+.refresh-button {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    background-color: #234d64;
+    border-radius: 5px;
+    height: 85px;
+    width: 50px;
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
 }
 
 .no-group {
