@@ -221,6 +221,7 @@ def request_access():
             "requester_id": user_id,
             "requester_public_key": bytes(requester_public_key).hex(),
             "group_id": group_id,
+            "current_time": current_time,
         }
     else:
         data = {

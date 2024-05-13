@@ -1,8 +1,8 @@
 <template>
     <div class="container">
         <div class="search-bar-container">
-            <input type="text" placeholder="搜索群组" class="search-bar" />
-            <button class="search-button">搜索</button>
+            <input v-model="searchKeyword" @input="searchGroups()" type="text" placeholder="搜索群组" class="search-bar" />
+            <button @click="searchGroups()" class="search-button">搜索</button>
 
             <div style="width: 40px;"></div>
 
@@ -72,34 +72,112 @@
         <h2 class="no-group" v-if="noGroup == true">您还没有创建群组，点击右上角 <b>创建</b> 🤗</h2>
 
         <div v-else>
-            <div class="groups" v-for="group in ownerGroup" :key="group.info">
-                <div class="group-item" @click="toggleGroups(group.info.id)">
-                    <div style="display: flex; align-items: center;">
-                        <div class="status"></div>
-                    </div>
-                    <div class="group">
-                        <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
-                        <!-- <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div> -->
-                        <div style="font-size: small; color: #1d74f2;">{{ group.info.id }}</div>
-                    </div>
-                    <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
-                    </div>
-                    <div class="description" v-else>无介绍</div>
-                    <div class="buttons">
-                        <!-- <input type="file" plain class="upload-button" @change="uploadFile($event, group.info.id)"> -->
-                        <el-button type="primary" plain class="show-upload" @click.stop="showUploadDialog()">
-                            <el-icon color="#409efc">
-                                <UploadFilled style="width: 20px;" />
-                            </el-icon> 上传文件
-                        </el-button>
+            <div v-if="searchKeyword" class="search-results">
+                <div class="groups" v-for="group in filteredFiles" :key="group.info">
+                    <div class="group-item" @click="toggleGroups(group.info.id)">
+                        <div style="display: flex; align-items: center;">
+                            <div class="status"></div>
+                        </div>
+                        <div class="group">
+                            <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
+                            <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
+                        </div>
+                        <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
+                        </div>
+                        <div class="description" v-else>无介绍</div>
+                        <div class="buttons">
+                            <!-- <input type="file" plain class="upload-button" @change="uploadFile($event, group.info.id)"> -->
+                            <el-button type="primary" plain class="show-upload" @click.stop="showUploadDialog()">
+                                <el-icon color="#409efc">
+                                    <UploadFilled style="width: 20px;" />
+                                </el-icon> 上传文件
+                            </el-button>
 
-                        <el-button type="danger" plain class="disband-button" @click.stop="disbandGroup()">
-                            <el-icon color="#f56c6c">
-                                <RemoveFilled style="width: 20px;" />
-                            </el-icon> 解散群组
-                        </el-button>
+                            <el-button type="danger" plain class="disband-button" @click.stop="disbandGroup()">
+                                <el-icon color="#f56c6c">
+                                    <RemoveFilled style="width: 20px;" />
+                                </el-icon> 解散群组
+                            </el-button>
+                        </div>
                     </div>
+
+                    <div class="files" v-if="expandedGroups.includes(group.info.id)">
+                        <div class="no-file" v-if="group.files.length === 0">
+                            <span style="font-size: large;">现在还没有任何文件！使用上方的 <b>上传</b> 按钮为您的本地IPFS 节点添加文件。</span>
+                        </div>
+                        <div v-else class="have-file">
+                            <el-table :data="group.files" style="width: 100%;"
+                                @selection-change="handleSelectionChange">
+                                <el-table-column type="selection" width="30" />
+                                <el-table-column label="文件名" prop="0" width="150" />
+                                <el-table-column label="时间" prop="1" width="100" />
+                                <el-table-column label="哈希CID" prop="2" width="420" />
+                                <el-table-column label="大小KB" prop="3" />
+                                <el-table-column label="操作">
+                                    <template #default="{ row }">
+                                        <el-button @click="remove(row[0], row[2])" type="info" plain
+                                            style="width: 80%;">移除</el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+
+                            <div style="margin-top: 10px;">
+                                <el-button type="primary" plain @click="toggleSelection(group.files)">
+                                    移除所选文件
+                                </el-button>
+                                <el-button type="primary" plain @click="toggleSelection()">
+                                    清除选择
+                                </el-button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <el-dialog v-model="uploadVisible" title="" width="400" align-center>
+                        <el-upload ref="upload" class="upload-file"
+                            action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15" :limit="1"
+                            :on-exceed="handleExceed" :auto-upload="false" @change="handleFileChange">
+                            <template #trigger>
+                                <el-button type="primary" plain>选择文件</el-button>
+                            </template>
+                            <template #tip>
+                                <div class="el-upload__tip text-red"></div>
+                            </template>
+                            <el-button class="ml-3" type="success" plain @click="uploadFile(group.info.id)"
+                                style="margin-left: 20px">
+                                上传IPFS
+                            </el-button>
+                        </el-upload>
+                    </el-dialog>
                 </div>
+            </div>
+            <div v-else>
+                <div class="groups" v-for="group in ownerGroup" :key="group.info">
+                    <div class="group-item" @click="toggleGroups(group.info.id)">
+                        <div style="display: flex; align-items: center;">
+                            <div class="status"></div>
+                        </div>
+                        <div class="group">
+                            <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
+                            <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
+                        </div>
+                        <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
+                        </div>
+                        <div class="description" v-else>无介绍</div>
+                        <div class="buttons">
+                            <!-- <input type="file" plain class="upload-button" @change="uploadFile($event, group.info.id)"> -->
+                            <el-button type="primary" plain class="show-upload" @click.stop="showUploadDialog()">
+                                <el-icon color="#409efc">
+                                    <UploadFilled style="width: 20px;" />
+                                </el-icon> 上传文件
+                            </el-button>
+
+                            <el-button type="danger" plain class="disband-button" @click.stop="disbandGroup()">
+                                <el-icon color="#f56c6c">
+                                    <RemoveFilled style="width: 20px;" />
+                                </el-icon> 解散群组
+                            </el-button>
+                        </div>
+                    </div>
 
                 <div class="files" v-if="expandedGroups.includes(group.info.id)">
                     <div class="no-file" v-if="group.files.length === 0">
@@ -128,27 +206,23 @@
                     </div>
                 </div>
 
-                <el-dialog v-model="uploadVisible" title="" width="400" align-center>
-                    <el-upload
-                        ref="upload"
-                        class="upload-file"
-                        action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
-                        :limit="1"
-                        :on-exceed="handleExceed"
-                        :auto-upload="false"
-                        @change="handleFileChange"
-                    >
-                        <template #trigger>
-                            <el-button type="primary" plain>选择文件</el-button>
-                        </template>
-                        <template #tip>
-                            <div class="el-upload__tip text-red"></div>
-                        </template>
-                        <el-button class="ml-3" type="success" plain @click="uploadFile(group.info.id)" style="margin-left: 20px">
-                            上传IPFS
-                        </el-button>
-                    </el-upload>
-                </el-dialog>
+                    <el-dialog v-model="uploadVisible" title="" width="400" align-center>
+                        <el-upload ref="upload" class="upload-file"
+                            action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15" :limit="1"
+                            :on-exceed="handleExceed" :auto-upload="false" @change="handleFileChange">
+                            <template #trigger>
+                                <el-button type="primary" plain>选择文件</el-button>
+                            </template>
+                            <template #tip>
+                                <div class="el-upload__tip text-red"></div>
+                            </template>
+                            <el-button class="ml-3" type="success" plain @click="uploadFile(group.info.id)"
+                                style="margin-left: 20px">
+                                上传IPFS
+                            </el-button>
+                        </el-upload>
+                    </el-dialog>
+                </div>
             </div>
         </div>
     </div>
@@ -159,7 +233,8 @@
 import axios from 'axios';
 import { ElTable, ElButton } from 'element-plus'
 import CryptoService from '@/services/CryptoService';
-import { AddKeyToTable, SearchFromKeyTable } from '@/services/DataBase';
+// import { AddKeyToTable, SearchFromKeyTable } from '@/services/DataBase';
+import { AddKeyToTable } from '@/services/DataBase';
 import { create } from 'kubo-rpc-client';
 import CryptoJS from 'crypto-js';
 
@@ -183,9 +258,22 @@ export default {
             requests: [],
             multipleSelection: [],
             multipleTableRef: null,
+            filteredFiles: [],
+            searchKeyword: '',
         };
     },
     methods: {
+        searchGroups() {
+            this.filteredFiles = [];
+            // const keyword = this.searchKeyword.trim();
+            const keyword = this.searchKeyword;
+            console.log("keyword", keyword);
+            this.ownerGroup.forEach(group => {
+                if (group.info.name.includes(keyword) || group.info.description.includes(keyword)) {
+                    this.filteredFiles.push(group);
+                }
+            });
+        },
         bufferToHex(buffer) {
             const bytes = new Uint8Array(buffer);
             return bytes.reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), ''); // 将每个字节转换为十六进制
@@ -283,7 +371,7 @@ export default {
             console.log(groupId)
             // 找到要移除的数据的索引
             const index = this.requests.findIndex(request => request.requester_id === userId && request.group_id === groupId);
-            
+
             if (index !== -1) {
                 // 如果找到了匹配的数据，则移除
                 this.requests.splice(index, 1);
@@ -380,18 +468,38 @@ export default {
             this.file = file.raw;
             console.log(this.file);
         },
+        async getFileKey(groupId) {
+            try {
+                const response = await axios.post('http://localhost:5000/get_file_key', {
+                    group_id: groupId,
+                });
+                if (response.status === 200) {
+                    console.log(response.data);
+                    const key = await this.importKeyFromHex(response.data.file_key);
+                    console.log("Key imported successfully again:", key);
+                    return key;
+                } else {
+                    alert("请求失败，无法获取文件密钥");
+                }
+            } catch (error) {
+                console.log(error);
+                alert("出现错误，联系开发人员");
+            }
+        },
         // async uploadFile(event, groupId) {                        
-        async uploadFile(groupId) {                        
+        async uploadFile(groupId) {
             // const file = event.target.files[0];
             const file = this.file;
             if (!file) {
                 return;
             }
 
-            const result = await SearchFromKeyTable(groupId);
+            // const result = await SearchFromKeyTable(groupId);
             // const result = results[0].file_key;
-            console.log(result.file_key);
-            var file_key = await this.importKeyFromHex(result.file_key);
+            // console.log(result.file_key);
+            // var file_key = await this.importKeyFromHex(result.file_key);
+            var file_key = await this.getFileKey(groupId);
+            console.log(file_key);
 
             const reader = new FileReader();
 
