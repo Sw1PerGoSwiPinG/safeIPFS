@@ -74,7 +74,7 @@
                             </el-table-column>
                         </el-table>
                         <div style="margin-top: 10px;">
-                            <el-button type="primary" plain @click="toggleSelection()">下载所选文件</el-button>
+                            <el-button type="primary" plain @click="toggleSelection(group.info.id)">下载所选文件</el-button>
                             <el-button type="primary" plain>清除选择</el-button>
                         </div>
                     </div>
@@ -131,29 +131,20 @@ export default {
     },
     methods: {
         async getMemberGroups() {
-            // const response = await axios.post('http://localhost:5000/request_group_files', {
-            //     userId: this.$route.params.userId
-            // });
-            // if (response.status === 200) {
-            //     if (response.data.files.length == 0) {
-            //         this.noGroup = true;
-            //     } else {
-            //         this.noGroup = false;
-            //         this.memberGroup = response.data.files;
-            //     }
-            //     console.log(response.data.files);
-            // } else {
-            //     alert("请求失败，请联系开发人员");
-            // }
-            this.memberGroup.push(
-                {
-                    "info": {"id": "987654321", "name": "热门动作电影", "description": "用来存放一些电影", },
-                    "files": [
-                        ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560", "26"],
-                        ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6", "18"]
-                    ]
+            const response = await axios.post('http://localhost:5000/request_group_files', {
+                userId: this.$route.params.userId
+            });
+            if (response.status === 200) {
+                if (response.data.files.length == 0) {
+                    this.noGroup = true;
+                } else {
+                    this.noGroup = false;
+                    this.memberGroup = response.data.files;
                 }
-            )
+                console.log(response.data.files);
+            } else {
+                alert("请求失败，请联系开发人员");
+            }
         },
         async getToBeConfirmed() {
             const response = await axios.post('http://localhost:5000/get_approved_requests', {
@@ -224,15 +215,16 @@ export default {
                 this.expandedGroups.push(groupId);
             }
         },
-        toggleSelection(clear) {
+        toggleSelection(groupId, clear) {
             if (!clear) {
                 const removeFiles = [];
                 this.multipleSelection.forEach((file) => {
-                    console.log(file)
                     removeFiles.push(file[0]);
-                    // this.remove(file[0], file[2]);
                 });
                 alert(`确定下载 ${removeFiles.toString()} 吗？`);
+                this.multipleSelection.forEach((file) => {
+                    this.downloadFile(groupId, file[0], file[2])
+                });
             } else {
                 this.multipleTableRef.clearSelection();
             }
@@ -274,7 +266,6 @@ export default {
             } catch (error) {
                 console.error('下载文件时出错:', error);
             }
-            // console.log(`下载了${fileName}-${fileHash}`);
         },
         async getFileKey(groupId) {
             try {
