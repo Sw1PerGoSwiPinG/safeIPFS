@@ -28,19 +28,13 @@
                             <el-input v-model="form.group_name" autocomplete="off" />
                         </el-form-item>
                         <el-form-item label="群组描述" :label-width="formLabelWidth">
-                            <!-- <el-select v-model="form.region" placeholder="Please select a zone">
-                            <el-option label="Zone No.1" value="shanghai" />
-                            <el-option label="Zone No.2" value="beijing" />
-                            </el-select> -->
                             <el-input v-model="form.group_description" autocomplete="off" />
                         </el-form-item>
                     </el-form>
                     <template #footer>
                         <div class="dialog-footer">
-                            <el-button @click="dialogFormVisible = false">Cancel</el-button>
-                            <el-button type="primary" @click="createGroup()">
-                                Confirm
-                            </el-button>
+                            <el-button @click="dialogFormVisible = false">取消</el-button>
+                            <el-button type="primary" @click="createGroup()">确认</el-button>
                         </div>
                     </template>
                 </el-dialog>
@@ -76,7 +70,7 @@
             </div>
         </div>
 
-        <h1 class="no-group" v-if="ownerGroup.length === 0">您还没有创建群组，点击右上角 <b>创建</b> 🤗</h1>
+        <h1 class="no-group" v-if="noGroup == true">您还没有创建群组，点击右上角 <b>创建</b> 🤗</h1>
 
         <div v-else>
             <div class="groups" v-for="group in ownerGroup" :key="group.info">
@@ -109,10 +103,10 @@
 
                 <div class="files" v-if="expandedGroups.includes(group.info.id)">
                     <div class="no-file" v-if="group.files.length === 0">
-                        <span style="font-size: large;">现在还没有任何文件！使用上方的 <b>上传</b> 按钮为您的本地IPFS 节点添加文件。</span>
+                        <span>现在还没有任何文件！点击 <b>上传文件</b> 按钮为您的本地IPFS节点添加文件。</span>
                     </div>
                     <div v-else class="have-file">
-                        <el-table :data="group.files" style="width: 100%;"
+                        <el-table ref="multipleTableRef" :data="group.files" style="width: 100%;"
                             @selection-change="handleSelectionChange">
                             <el-table-column type="selection" width="30" />
                             <el-table-column label="文件名" prop="0" width="150" />
@@ -128,12 +122,8 @@
                         </el-table>
 
                         <div style="margin-top: 10px;">
-                            <el-button type="primary" plain @click="toggleSelection(group.files)">
-                                移除所选文件
-                            </el-button>
-                            <el-button type="primary" plain @click="toggleSelection()">
-                                清除选择
-                            </el-button>
+                            <el-button type="primary" plain @click="toggleSelection()">移除所选文件</el-button>
+                            <el-button type="primary" plain>清除选择</el-button>
                         </div>
                     </div>
                 </div>
@@ -167,8 +157,6 @@
 
 <script>
 import axios from 'axios';
-// import { ref, nextTick, onMounted } from 'vue'
-// import { ref } from 'vue'
 import { ElTable, ElButton } from 'element-plus'
 import CryptoService from '@/services/CryptoService';
 import { AddKeyToTable, SearchFromKeyTable } from '@/services/DataBase';
@@ -183,6 +171,7 @@ export default {
             ipfs: null,
             ownerGroup: [],
             expandedGroups: [],
+            noGroup: false,
             dialogFormVisible: false,
             uploadVisible: false,
             file: null,
@@ -191,6 +180,8 @@ export default {
                 group_description: '',
             },
             requests: [],
+            multipleSelection: [],
+            multipleTableRef: null,
         };
     },
     methods: {
@@ -318,29 +309,34 @@ export default {
             }
         },
         async getMyGroupAndFiles() {
-            try {
-                const response = await axios.post('http://localhost:5000/get_my_group_files', {
-                    userId: this.$route.params.userId,
-                })
-                if (response.status === 200) {
-                    this.ownerGroup = response.data.files;
-                    console.log(response.data.files)
-                } else {
-                    alert("请求失败，请联系开发人员");
-                }
-            } catch (error) {
-                console.log(error);
-                alert("出现错误，联系开发人员");
-            }
-            // this.ownerGroup.push(
-            //     {
-            //         "info": {"id": "987654321", "name": "热门动作电影", "description": "用来存放一些电影", },
-            //         "files": [
-            //             ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560", "26"],
-            //             ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6", "18"]
-            //         ]
+            // try {
+            //     const response = await axios.post('http://localhost:5000/get_my_group_files', {
+            //         userId: this.$route.params.userId,
+            //     })
+            //     if (response.status === 200) {
+            //         if (response.data.files.length == 0) {
+            //             this.noGroup = true;
+            //         } else {
+            //             this.noGroup = false;
+            //             this.ownerGroup = response.data.files;
+            //         }
+            //         console.log(response.data.files)
+            //     } else {
+            //         alert("请求失败，请联系开发人员");
             //     }
-            // )
+            // } catch (error) {
+            //     console.log(error);
+            //     alert("出现错误，联系开发人员");
+            // }
+            this.ownerGroup.push(
+                {
+                    "info": {"id": "987654321", "name": "热门动作电影", "description": "用来存放一些电影", },
+                    "files": [
+                        ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560", "26"],
+                        ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6", "18"]
+                    ]
+                }
+            )
         },
         disbandGroup(groupId) {
             console.log(`解散 ${groupId} 号群组`);
@@ -355,18 +351,21 @@ export default {
                 this.expandedGroups.push(groupId);
             }
         },
-        toggleSelection(files) {
-            if (files) {
-                files.forEach((file) => {
-                    this.remove(file[0], file[2]);
+        toggleSelection(clear) {
+            if (!clear) {
+                const downloadFiles = [];
+                this.multipleSelection.forEach((file) => {
+                    console.log(file)
+                    downloadFiles.push(file[0]);
+                    // this.download(file[0], file[2]);
                 });
-                this.$refs.multipleTableRef.clearSelection();
+                alert(`确定移除 ${downloadFiles.toString()} 吗？`);
             } else {
-                this.$refs.multipleTableRef.clearSelection();
+                this.multipleTableRef.clearSelection();
             }
         },
         handleSelectionChange(val) {
-            this.multipleSelection = val
+            this.multipleSelection = val;
         },
         async remove(fileName, fileHash) {
             try {
@@ -471,18 +470,10 @@ export default {
         }
     },
     mounted() {
-        // this.refresh();
+        this.multipleTableRef = this.$refs.multipleTableRef;
         this.getMyGroupAndFiles();
         this.ipfs = create("http://localhost:5001/api/v0");
     }
-    // mounted() {
-    //     // nextTick(() => {
-    //     //     this.multipleTableRef = this.$refs.multipleTableRef;
-    //     // });
-    //     onMounted(() => {
-    //         this.multipleTableRef = this.$refs.multipleTableRef;
-    //     });
-    // },
 }
 </script>
 
@@ -577,7 +568,9 @@ export default {
 }
 
 .no-file {
-    height: 50px;
+    width: 80%;
+    height: 40px;
+    margin-left: 10%;
     padding-top: 20px;
 }
 

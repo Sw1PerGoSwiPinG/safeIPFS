@@ -8,6 +8,7 @@
 
             <div class="create">
                 <button @click="dialogFormVisible = true" class="create-button"><span style="color: #69c4cd;">+</span> 加入群组</button>
+                <button @click="refresh()" class="create-button">🆕刷新</button>
             </div>
 
             <el-dialog v-model="dialogFormVisible" title="申请信息" width="500">
@@ -19,16 +20,13 @@
                 <template #footer>
                     <div class="dialog-footer">
                         <el-button @click="dialogFormVisible = false">取消</el-button>
-                        <el-button type="primary" @click="joinGroup()">
-                            确定
-                        </el-button>
+                        <el-button type="primary" @click="joinGroup()">确定</el-button>
                     </div>
                 </template>
             </el-dialog>
         </div>
 
-        <!-- <h1 class="no-group" >您还没有加入群组，点击右上角 <b>加入</b> 🤗</h1>
-        <div v-if="memberGroup.length === 0"></div> -->
+        <h1 class="no-group" v-if="noGroup == true">您还没有加入群组，点击右上角 <b>加入</b> 🤗</h1>
 
         <div>
             <div class="groups" v-for="group in memberGroup" :key="group.info">
@@ -58,7 +56,10 @@
                 </div>
 
                 <div class="files" v-if="expandedGroups.includes(group.info.id)">
-                    <div v-if="group.files.length != 0" class="have-file">
+                    <div class="no-file" v-if="group.files.length === 0">
+                        <span>现在还没有任何文件！请联系群主上传。</span>
+                    </div>
+                    <div v-else class="have-file">
                         <el-table :data="group.files" style="width: 100%;" @selection-change="handleSelectionChange">
                             <el-table-column type="selection" width="30" />
                             <el-table-column label="文件名" prop="0" width="150" />
@@ -73,12 +74,8 @@
                             </el-table-column>
                         </el-table>
                         <div style="margin-top: 10px;">
-                            <el-button type="primary" plain @click="toggleSelection(group.files)">
-                                下载所选文件
-                            </el-button>
-                            <el-button type="primary" plain @click="toggleSelection()">
-                                清除选择
-                            </el-button>
+                            <el-button type="primary" plain @click="toggleSelection()">下载所选文件</el-button>
+                            <el-button type="primary" plain>清除选择</el-button>
                         </div>
                     </div>
                 </div>
@@ -119,18 +116,8 @@ export default {
     data() {
         return {
             ipfs: create('http://localhost:5001/api/v0'),
-            memberGroup: [
-                // {
-                //     "info": {
-                //         "id": "45",
-                //         "name": "豆瓣top100电影",
-                //         "description": "用来存放一些电影",
-                //     },
-                //     "files": [
-                //         ["第二次作业-李旭桓-2021212066.pdf", "2024-05-12", "QmYNvyXB6TQ5a3fJWcVJnWV1irJyjG1EADwvqBu4d2iMSM", "2560"],
-                //     ]
-                // },
-            ],
+            memberGroup: [],
+            noGroup: false,
             dialogFormVisible: false,
             toBeConfirmedVisible: false,
             toBeConfirmed: [],
@@ -138,20 +125,35 @@ export default {
                 groupId: '',
             },
             expandedGroups: [],
+            multipleSelection: [],
+            multipleTableRef: null,
         };
     },
     methods: {
         async getMemberGroups() {
-            const response = await axios.post('http://localhost:5000/request_group_files', {
-                userId: this.$route.params.userId
-            });
-            if (response.status === 200) {
-                this.memberGroup = response.data.files;
-                this.memberGroup = response.data.files;
-                console.log(response.data.files)
-            } else {
-                alert("请求失败，请联系开发人员");
-            }
+            // const response = await axios.post('http://localhost:5000/request_group_files', {
+            //     userId: this.$route.params.userId
+            // });
+            // if (response.status === 200) {
+            //     if (response.data.files.length == 0) {
+            //         this.noGroup = true;
+            //     } else {
+            //         this.noGroup = false;
+            //         this.memberGroup = response.data.files;
+            //     }
+            //     console.log(response.data.files);
+            // } else {
+            //     alert("请求失败，请联系开发人员");
+            // }
+            this.memberGroup.push(
+                {
+                    "info": {"id": "987654321", "name": "热门动作电影", "description": "用来存放一些电影", },
+                    "files": [
+                        ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560", "26"],
+                        ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6", "18"]
+                    ]
+                }
+            )
         },
         async getToBeConfirmed() {
             const response = await axios.post('http://localhost:5000/get_approved_requests', {
@@ -181,8 +183,6 @@ export default {
                 alert("请求失败，请联系开发人员");
                 return;
             }
-
-
         },
         confirmAll() {
             this.toBeConfirmed.forEach(item => {
@@ -208,6 +208,9 @@ export default {
             }
             this.dialogFormVisible = false;
         },
+        refresh() {
+            this.getMemberGroups();
+        },
         downloadAll(groupId) {
             console.log(`下载了群组 ${groupId} 所有文件`);
         },
@@ -221,14 +224,17 @@ export default {
                 this.expandedGroups.push(groupId);
             }
         },
-        toggleSelection(files) {
-            if (files) {
-                files.forEach((file) => {
-                    this.remove(file[0], file[2]);
+        toggleSelection(clear) {
+            if (!clear) {
+                const removeFiles = [];
+                this.multipleSelection.forEach((file) => {
+                    console.log(file)
+                    removeFiles.push(file[0]);
+                    // this.remove(file[0], file[2]);
                 });
-                this.$refs.multipleTableRef.clearSelection();
+                alert(`确定下载 ${removeFiles.toString()} 吗？`);
             } else {
-                this.$refs.multipleTableRef.clearSelection();
+                this.multipleTableRef.clearSelection();
             }
         },
         handleSelectionChange(val) {
@@ -390,7 +396,7 @@ export default {
     width: 80%;
     height: 40px;
     margin-left: 10%;
-    padding-top: 10px;
+    padding-top: 20px;
 }
 
 .have-file {

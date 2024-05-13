@@ -23,7 +23,7 @@ CORS(app)
 # app.config["SESSION_PERMANENT"] = False
 # app.config["SESSION_TYPE"] = "filesystem"
 # Session(app)
-port = 5002
+port = 5000
 proxy_address = "10.122.236.111"
 proxy_port = 5000
 # conn = sqlite3.connect("owner.db")
