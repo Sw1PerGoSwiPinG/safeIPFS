@@ -343,12 +343,16 @@ def upload_file():
     group_id = data['group_id']
     ipfs_hash = data['ipfs_hash']
     file_name = data['file_name']
+    file_size = data['file_size']
+    upload_date = data['upload_date']
     data_ = {
         'group_id': group_id,
         'ipfs_hash': ipfs_hash,
         'file_name': file_name,
+        'file_size': file_size,
+        'upload_date': upload_date,
     }
-    response = requests.post(f'http://{proxy_address}:{proxy_port}/add_file', json=data_)
+    response = requests.post(f'http://{proxy_address}:{proxy_port}/upload_file', json=data_)
     if response.status_code == 200:
         return jsonify({'message': 'File added successfully!'})
 

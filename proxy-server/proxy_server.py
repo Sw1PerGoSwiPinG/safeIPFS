@@ -318,13 +318,15 @@ def upload_file():
     group_id = data['group_id']
     ipfs_hash = data['ipfs_hash']
     file_name = data['file_name']
+    file_size = data['file_size']
+    upload_date = data['upload_date']
     try:
         with connection.cursor() as cursor:
             sql = """
-            INSERT INTO files (group_id, ipfs_hash, file_name)
-            VALUES (%s, %s, %s)
+            INSERT INTO files (group_id, ipfs_hash, file_name, file_size, upload_date)
+            VALUES (%s, %s, %s, %s, %s)
             """
-            cursor.execute(sql, (group_id, ipfs_hash, file_name))
+            cursor.execute(sql, (group_id, ipfs_hash, file_name, file_size, upload_date))
             connection.commit()
             return jsonify({"message": "File added successfully"}), 200
     except Exception as e:
