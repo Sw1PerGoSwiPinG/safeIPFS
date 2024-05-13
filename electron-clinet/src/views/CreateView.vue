@@ -318,25 +318,29 @@ export default {
             }
         },
         async getMyGroupAndFiles() {
-            // try {
-            //     const response = await axios.post('http://localhost:5000/get_requests', {
-            //         user_id: this.$route.params.userId,
-            //     })
-            //     console.log(response.data.requests);
-            //     this.ownerGroup = response.data.requests;
-            // } catch (error) {
-            //     console.log(error);
-            //     alert("出现错误，联系开发人员");
-            // }
-            this.ownerGroup.push(
-                {
-                    "info": {"id": "987654321", "name": "热门动作电影", "description": "用来存放一些电影", },
-                    "files": [
-                        ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560", "26"],
-                        ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6", "18"]
-                    ]
+            try {
+                const response = await axios.post('http://localhost:5000/get_my_group_files', {
+                    userId: this.$route.params.userId,
+                })
+                if (response.status === 200) {
+                    this.ownerGroup = response.data.files;
+                    console.log(response.data.files)
+                } else {
+                    alert("请求失败，请联系开发人员");
                 }
-            )
+            } catch (error) {
+                console.log(error);
+                alert("出现错误，联系开发人员");
+            }
+            // this.ownerGroup.push(
+            //     {
+            //         "info": {"id": "987654321", "name": "热门动作电影", "description": "用来存放一些电影", },
+            //         "files": [
+            //             ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560", "26"],
+            //             ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6", "18"]
+            //         ]
+            //     }
+            // )
         },
         disbandGroup(groupId) {
             console.log(`解散 ${groupId} 号群组`);
