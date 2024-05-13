@@ -80,6 +80,7 @@
                     </div>
                     <div class="group">
                         <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
+                        <!-- <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div> -->
                         <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
                     </div>
                     <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
@@ -319,6 +320,9 @@ export default {
                     } else {
                         this.noGroup = false;
                         this.ownerGroup = response.data.files;
+                        this.ownerGroup.forEach(group => {
+                            group.info.id = this.generateHash(group.info.id);
+                        });
                     }
                     console.log(response.data.files)
                 } else {
@@ -440,6 +444,11 @@ export default {
         },
         disband() {
             console.log("解散群组");
+        },
+        generateHash(num) {
+            let paddedNum = num.toString().padStart(3, '0');
+            let hexString = Math.random().toString(16).substr(2, 14);
+            return hexString + paddedNum + hexString;
         },
     },
     computed: {

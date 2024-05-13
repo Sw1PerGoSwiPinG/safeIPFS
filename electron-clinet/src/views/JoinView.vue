@@ -184,7 +184,8 @@ export default {
         async joinGroup() {
             try {
                 const response = await axios.post('http://localhost:5000/request_access', {
-                        group_id: this.form.groupId,
+                        // group_id: this.form.groupId,
+                        group_id: this.extractNumber(this.form.groupId),
                         user_id: this.$route.params.userId,
                         current_time: this.getCurrentTime(),
                     })                
@@ -326,7 +327,13 @@ export default {
             const formattedDateTime = `${formattedDate}-${formattedTime}`;
 
             return formattedDateTime;
-        }
+        },
+        extractNumber(Hash) {
+            let realNumber = Hash.substring(13, 16);
+            realNumber = parseInt(realNumber, 10);
+            console.log(typeof realNumber)
+            return realNumber;
+        },
     },
     mounted() {
         this.getMemberGroups();
