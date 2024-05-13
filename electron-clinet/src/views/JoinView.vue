@@ -43,12 +43,12 @@
                     </div>
                     <div class="description" v-else>无介绍</div>
                     <div class="buttons">
-                        <el-button type="primary" plain class="upload-button">
+                        <el-button type="primary" plain class="upload-button" @click.stop="downloadAll(group.info.id)">
                             <el-icon color="#409efc">
                                 <Download style="width: 20px;" />
                             </el-icon> 全部下载
                         </el-button>
-                        <el-button type="danger" plain class="disband-button">
+                        <el-button type="danger" plain class="disband-button" @click.stop="quitGroup(group.info.id)">
                             <el-icon color="#f56c6c">
                                 <CircleCloseFilled style="width: 20px;" />
                             </el-icon> 退出群组
@@ -88,8 +88,29 @@
             </div>
         </div>
 
-    </div>
+        <el-dialog v-model="toBeConfirmedVisible" title="待确认的请求" width="800">
+            <el-table :data="toBeConfirmed">
+                <el-table-column type="index"/>
+                <el-table-column label="群主ID" prop="owner_id" />
+                <el-table-column label="群组ID" prop="group_id" />
+                <el-table-column label="状态" prop="status" />
+                <el-table-column label="操作">
+                    <template #default="{ row }">
+                        <div>
+                            <el-button @click="confirm(row.owner_id, row.group_id)" type="info" plain>确认</el-button>
+                        </div>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button type="success" @click="confirmAll()" plain>一键确认</el-button>
+                    <el-button type="info" @click="toBeConfirmedVisible = false" plain>稍后处理</el-button>
+                </div>
+            </template>
+        </el-dialog>
 
+    </div>
 </template>
 
 <script>
@@ -101,17 +122,6 @@ export default {
             memberGroup: [
                 {
                     "info": {
-                        "id": "123456789",
-                        "name": "豆瓣top100电影",
-                        "description": "用来存放一些电影",
-                    },
-                    "files": [
-                        ["肖申克的救赎.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560"],
-                        ["霸王别姬.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6"]
-                    ]
-                },
-                {
-                    "info": {
                         "id": "987654321",
                         "name": "热门动作电影",
                         "description": "用来存放一些电影",
@@ -121,16 +131,10 @@ export default {
                         ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6"]
                     ]
                 },
-                {
-                    "info": {
-                        "id": "1234abcdefg",
-                        "name": "其他电影",
-                        "description": "",
-                    },
-                    "files": []
-                }
             ],
             dialogFormVisible: false,
+            toBeConfirmedVisible: false,
+            toBeConfirmed: [],
             form: {
                 groupId: '',
             },
@@ -140,7 +144,7 @@ export default {
     methods: {
         async sendUserId() {
             const response = await axios.post('http://localhost:5000/request_group_files', {
-                userId: parseInt(this.$route.params.userId)
+                userId: this.$route.params.userId
             });
             if (response.status === 200) {
                 // this.memberGroup = response.data.groups;
@@ -148,6 +152,53 @@ export default {
             } else {
                 alert("请求失败，请联系开发人员");
             }
+        },
+        async getToBeConfirmed() {
+            const response = await axios.post('http://localhost:5000/get_approved_requests', {
+                requester_id: this.$route.params.userId
+            });
+            if (response.status === 200) {
+                console.log(response.data.requests)
+                if (response.data.requests.length == 0) {
+                    return;
+                }
+                this.toBeConfirmed = response.data.requests;
+            } else {
+                alert("请求失败，请联系开发人员");
+            }
+            this.toBeConfirmedVisible = true;
+        },
+        async confirm(ownerId, groupId) {
+            const response = await axios.post('http://localhost:5000/process_approved_request', {
+                user_id: this.$route.params.userId,
+                owner_id: ownerId,
+                group_id: groupId,
+            });
+            if (response.status === 200) {
+                console.log(response.data.requests)
+                if (response.data.requests.length == 0) {
+                    return;
+                }
+            } else {
+                alert("请求失败，请联系开发人员");
+            }
+
+            // 找到要移除的数据的索引
+            const index = this.toBeConfirmed.findIndex(item => item.owner_id === ownerId && item.group_id === groupId);
+            
+            if (index !== -1) {
+                // 如果找到了匹配的数据，则移除
+                this.toBeConfirmed.splice(index, 1);
+                console.log(`已成功移除待确认请求`);
+            } else {
+                alert("未成功移除");
+            }
+        },
+        confirmAll() {
+            this.toBeConfirmed.forEach(item => {
+                this.confirm(item.ownerId, item.groupId);
+            })
+            this.toBeConfirmedVisible = true;
         },
         async joinGroup() {
             try {
@@ -166,6 +217,12 @@ export default {
                     alert("出现错误，联系开发人员");
             }
             this.dialogFormVisible = false;
+        },
+        downloadAll(groupId) {
+            console.log(`下载了群组 ${groupId} 所有文件`);
+        },
+        quitGroup(groupId) {
+            console.log(`退出群组 ${groupId}`);
         },
         toggleFiles(groupId) {
             if (this.expandedGroups.includes(groupId)) {
@@ -210,6 +267,7 @@ export default {
     mounted() {
         console.log("start send!");
         this.sendUserId();
+        this.getToBeConfirmed();
     }
 }
 </script>

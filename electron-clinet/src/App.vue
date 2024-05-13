@@ -3,20 +3,17 @@
         <div class="nav" id="nav">
             <div class="logo">
                 <div class="name">SafeIPFS</div><br>
-                <div class="author"> Designed by <br> zjy | szt | lxh | lhy </div>
+                <div class="author"> Designed by <br> zjy.szt.lxh.lhy </div>
             </div>
 
             <router-link :to="`/${userId}/home`">
                 <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/home` }">系统首页</div>
             </router-link>
             <router-link :to="`/${userId}/create`">
-                <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/create` }">创建&上传</div>
+                <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/create` }">我想上传</div>
             </router-link>
             <router-link :to="`/${userId}/join`">
-                <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/join` }">加入&下载</div>
-            </router-link>
-            <router-link :to="`/${userId}/node`">
-                <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/node` }">节点查询</div>
+                <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/join` }">我想下载</div>
             </router-link>
             <router-link :to="`/${userId}/setting`">
                 <div class="nav-item" :class="{ 'active': $route.path === `/${userId}/setting` }">信息配置</div>
