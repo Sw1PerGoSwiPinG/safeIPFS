@@ -36,7 +36,7 @@
                     </div>
                     <div class="group">
                         <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
-                        <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
+                        <div style="font-size: small; color: #1d74f2;">{{ group.info.id }}</div>
                     </div>
                     <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
                     </div>
@@ -111,6 +111,7 @@
 import CryptoService from '@/services/CryptoService';
 import axios from 'axios';
 import { create } from 'kubo-rpc-client';
+import CryptoJS from 'crypto-js';
 
 export default {
     data() {
@@ -140,6 +141,9 @@ export default {
                 } else {
                     this.noGroup = false;
                     this.memberGroup = response.data.files;
+                    this.memberGroup.forEach(group => {
+                        group.info.id = this.generateHash(group.info.id);
+                    });
                 }
                 console.log(response.data.files);
             } else {
@@ -328,10 +332,15 @@ export default {
 
             return formattedDateTime;
         },
+        generateHash(num) {
+            let paddedNum = num.toString().padStart(3, '0');
+            let md5Hash = CryptoJS.MD5(paddedNum).toString();
+            let fakeHash = md5Hash.substring(0, 29) + paddedNum;
+            return fakeHash;
+        },
         extractNumber(Hash) {
-            let realNumber = Hash.substring(13, 16);
+            let realNumber = Hash.substring(29, 32);
             realNumber = parseInt(realNumber, 10);
-            console.log(typeof realNumber)
             return realNumber;
         },
     },

@@ -19,8 +19,7 @@
                     <span style="font-size: larger; font-weight: bold;">{{ totalFileSize }}</span><span
                         style="font-size: small;">总文件大小</span>
                 </div>
-                <button class="create-button" @click="dialogFormVisible = true"><span style="color: #69c4cd;">+</span>
-                    创建群组</button>
+                <button class="create-button" @click="dialogFormVisible = true"><span style="color: #69c4cd;">+</span>创建群组</button>
 
                 <el-dialog v-model="dialogFormVisible" title="创建群组" width="500">
                     <el-form :model="form">
@@ -81,7 +80,7 @@
                     <div class="group">
                         <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
                         <!-- <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div> -->
-                        <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
+                        <div style="font-size: small; color: #1d74f2;">{{ group.info.id }}</div>
                     </div>
                     <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
                     </div>
@@ -162,6 +161,7 @@ import { ElTable, ElButton } from 'element-plus'
 import CryptoService from '@/services/CryptoService';
 import { AddKeyToTable, SearchFromKeyTable } from '@/services/DataBase';
 import { create } from 'kubo-rpc-client';
+import CryptoJS from 'crypto-js';
 
 export default {
     components: {
@@ -247,7 +247,7 @@ export default {
                 }
                 this.ownerGroup.push({
                     "info": {
-                        "id": response.data.group_id,
+                        "id": this.generateHash(response.data.group_id),
                         "name": group_name,
                         "description": group_description,
                     },
@@ -447,8 +447,9 @@ export default {
         },
         generateHash(num) {
             let paddedNum = num.toString().padStart(3, '0');
-            let hexString = Math.random().toString(16).substr(2, 14);
-            return hexString + paddedNum + hexString;
+            let md5Hash = CryptoJS.MD5(paddedNum).toString();
+            let fakeHash = md5Hash.substring(0, 29) + paddedNum;
+            return fakeHash;
         },
     },
     computed: {
