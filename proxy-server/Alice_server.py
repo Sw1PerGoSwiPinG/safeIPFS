@@ -362,6 +362,7 @@ def request_group_files():
     data = request.json
     groups_ids = []
     requester_id = data['userId']
+    print(requester_id)
     conn = get_db_connection()
     c = conn.cursor()
 
@@ -370,6 +371,7 @@ def request_group_files():
 
     for row in rows:
         groups_ids.append(row[0])
+    # print(groups_ids)
 
     data_ = {
         'groups_ids': groups_ids,
@@ -382,6 +384,37 @@ def request_group_files():
             {'message': 'Request submitted successfully!', 'files': json.loads(response.text)['files_info']}), 200
     else:
         return jsonify({'message': 'Request failed!'}), 400
+
+
+# 定义路由
+@app.route('/get_file_key', methods=['POST'])
+def get_file_key():
+    # 从前端接收 group_id
+    data = request.json
+    group_id = data['group_id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT file_key FROM KeyTable WHERE group_id = ?", (group_id,))
+    file_key = cursor.fetchone()[0]
+    conn.close()
+    if file_key:
+        return jsonify({'file_key': file_key})
+    else:
+        return jsonify({'error': 'Group ID not found'}), 404
+
+
+@app.route('/disband_group', methods=['POST'])
+def disband_group():
+    data = request.json
+    group_id = data['group_id']
+    data_ = {
+        'group_id': group_id,
+    }
+    response = requests.post(f'http://{proxy_address}:{proxy_port}/disband_group', json=data_)
+    if response.status_code == 200:
+        return jsonify({'message': 'Group disbanded successfully!'}), 200
+    else:
+        return jsonify({'message': 'Group disband failed!'}), 400
 
 
 if __name__ == "__main__":

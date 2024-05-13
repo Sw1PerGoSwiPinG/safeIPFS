@@ -98,38 +98,7 @@ import axios from 'axios';
 export default {
     data() {
         return {
-            memberGroup: [
-                {
-                    "info": {
-                        "id": "123456789",
-                        "name": "豆瓣top100电影",
-                        "description": "用来存放一些电影",
-                    },
-                    "files": [
-                        ["肖申克的救赎.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560"],
-                        ["霸王别姬.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6"]
-                    ]
-                },
-                {
-                    "info": {
-                        "id": "987654321",
-                        "name": "热门动作电影",
-                        "description": "用来存放一些电影",
-                    },
-                    "files": [
-                        ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560"],
-                        ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6"]
-                    ]
-                },
-                {
-                    "info": {
-                        "id": "1234abcdefg",
-                        "name": "其他电影",
-                        "description": "",
-                    },
-                    "files": []
-                }
-            ],
+            memberGroup: [],
             dialogFormVisible: false,
             form: {
                 groupId: '',
@@ -140,10 +109,10 @@ export default {
     methods: {
         async sendUserId() {
             const response = await axios.post('http://localhost:5000/request_group_files', {
-                userId: parseInt(this.$route.params.userId)
+                userId: this.$route.params.userId
             });
             if (response.status === 200) {
-                // this.memberGroup = response.data.groups;
+                this.memberGroup = response.data.files;
                 console.log(response.data.files)
             } else {
                 alert("请求失败，请联系开发人员");
