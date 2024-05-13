@@ -122,7 +122,7 @@ def logout():
 def get_address():
     data = request.json
     print(data)
-    group_id = data["group_id"]
+    group_id = int(data["group_id"])
     requester_id = data["requester_id"]
     requester_public_key = data["requester_public_key"]
     current_time = data["current_time"]
@@ -158,7 +158,8 @@ def get_address():
                 return jsonify({"message": "Request cached."}), 200
             else:
                 return jsonify({"message": "Group not found."}), 404
-    except:
+    except Exception as e:
+        print(e)
         return jsonify({"message": "Error processing request."}), 500
 
 
@@ -337,10 +338,11 @@ def upload_file():
 def request_group_files():
     data = request.json
     groups_ids = data['groups_ids']
-    requester_id = data['user_id']
+    requester_id = data['requester_id']
+    # print(groups_ids, requester_id)
     try:
         with connection.cursor() as cursor:
-            files_info = {}
+            files_info = []
 
             for group_id in groups_ids:
                 sql = """
@@ -352,24 +354,103 @@ def request_group_files():
                 group_info = cursor.fetchone()
 
                 if group_info:
-                    requesters_id = group_info['requesters_id'].split(',')
-                    if requester_id in requesters_id:
+                    if group_info['requesters_id']:
+                        requesters_id = group_info['requesters_id'].split(',')
+                    else:
+                        requesters_id = []
+                    # print(requester_id)
+                    # print("owner_id", group_info['owner_id'])
+                    if (requester_id in requesters_id) or (requester_id == group_info['owner_id']):
                         sql = """
-                        SELECT ipfs_hash, file_name
+                        SELECT file_name, upload_date, ipfs_hash, file_size
                         FROM files
                         WHERE group_id = %s
                         """
                         cursor.execute(sql, (group_id,))
-                        files = cursor.fetchall()
-                        files_info[group_id] = files
+                        files_all_dict = cursor.fetchall()
+                        files = []
+                        for row in files_all_dict:
+                            files.append(
+                                [row['file_name'], row['upload_date'], row['ipfs_hash'],
+                                 "{:.2f}".format(int(row['file_size']) / 1024)])
+                        # files_info[group_id] = files
+                        info = {'id': group_info['group_id'], 'name': group_info['group_name'],
+                                'description': group_info['group_description']}
+                        files_info.append({'info': info, 'files': files})
                     else:
                         pass
                 else:
                     pass
-
+            # print(files_info)
             return jsonify({'files_info': files_info}), 200
     except Exception as e:
         return jsonify({"error": "Error processing request"}), 500
+
+
+@app.route('/get_my_group_files', methods=['POST'])
+def get_my_group_files():
+    data = request.json
+    groups_ids = data['groups_ids']
+    requester_id = data['requester_id']
+    # print(groups_ids, requester_id)
+    try:
+        with connection.cursor() as cursor:
+            files_info = []
+
+            for group_id in groups_ids:
+                sql = """
+                SELECT *
+                FROM user_groups
+                WHERE group_id = %s
+                """
+                cursor.execute(sql, (group_id,))
+                group_info = cursor.fetchone()
+
+                if group_info:
+                    # print(requester_id)
+                    # print("owner_id", group_info['owner_id'])
+                    if requester_id == group_info['owner_id']:
+                        sql = """
+                        SELECT file_name, upload_date, ipfs_hash, file_size
+                        FROM files
+                        WHERE group_id = %s
+                        """
+                        cursor.execute(sql, (group_id,))
+                        files_all_dict = cursor.fetchall()
+                        files = []
+                        for row in files_all_dict:
+                            files.append(
+                                [row['file_name'], row['upload_date'], row['ipfs_hash'],
+                                 "{:.2f}".format(int(row['file_size']) / 1024)])
+                        # files_info[group_id] = files
+                        info = {'id': group_info['group_id'], 'name': group_info['group_name'],
+                                'description': group_info['group_description']}
+                        files_info.append({'info': info, 'files': files})
+                    else:
+                        pass
+                else:
+                    pass
+            print("My files", files_info)
+            return jsonify({'files_info': files_info}), 200
+    except Exception as e:
+        return jsonify({"error": "Error processing request"}), 500
+
+
+@app.route('/disband_group', methods=['POST'])
+def disband_group():
+    data = request.json
+    group_id = data['group_id']
+    try:
+        with connection.cursor() as cursor:
+            sql = """
+            DELETE FROM user_groups
+            WHERE group_id = %s
+            """
+            cursor.execute(sql, (group_id,))
+            connection.commit()
+            return jsonify({"message": "Group disbanded successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": "Error disbanning group"}), 500
 
 
 @app.route('/test', methods=['GET'])

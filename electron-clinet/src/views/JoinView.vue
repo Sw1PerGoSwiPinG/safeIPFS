@@ -1,13 +1,14 @@
 <template>
     <div class="container">
         <div class="search-bar-container">
-            <input type="text" placeholder="搜索文件名或CID" class="search-bar" />
-            <button class="search-button">搜索</button>
+            <input v-model="searchKeyword" @input="searchFiles()" type="text" placeholder="搜索文件名或CID" class="search-bar" />
+            <button @click="searchFiles()" class="search-button">搜索</button>
 
             <div style="width: 40px;"></div>
 
             <div class="create">
-                <button @click="dialogFormVisible = true" class="create-button"><span style="color: #69c4cd;">+</span> 加入群组</button>
+                <button @click="dialogFormVisible = true" class="create-button"><span style="color: #69c4cd;">+</span>
+                    加入群组</button>
             </div>
 
             <el-dialog v-model="dialogFormVisible" title="申请信息" width="500">
@@ -30,67 +31,97 @@
         <h1 class="no-group" v-if="memberGroup.length === 0">您还没有加入群组，点击右上角 <b>加入</b> 🤗</h1>
 
         <div v-else>
-            <div class="groups" v-for="group in memberGroup" :key="group.info">
-                <div class="group-item" @click="toggleFiles(group.info.id)">
-                    <div style="display: flex; align-items: center;">
-                        <div class="status"></div>
-                    </div>
-                    <div class="group">
-                        <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
-                        <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
-                    </div>
-                    <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
-                    </div>
-                    <div class="description" v-else>无介绍</div>
-                    <div class="buttons">
-                        <el-button type="primary" plain class="upload-button" @click.stop="downloadAll(group.info.id)">
-                            <el-icon color="#409efc">
-                                <Download style="width: 20px;" />
-                            </el-icon> 全部下载
-                        </el-button>
-                        <el-button type="danger" plain class="disband-button" @click.stop="quitGroup(group.info.id)">
-                            <el-icon color="#f56c6c">
-                                <CircleCloseFilled style="width: 20px;" />
-                            </el-icon> 退出群组
-                        </el-button>
-                    </div>
+            <div v-if="searchKeyword" class="search-results">
+                <el-table :data="filteredFiles">
+                    <el-table-column type="selection" width="30" /> <!-- 显示选择框 -->
+                    <el-table-column label="文件名" prop="0" width="150" /> <!-- 显示文件名 -->
+                    <el-table-column label="时间" prop="1" width="100" /> <!-- 显示时间 -->
+                    <el-table-column label="哈希CID" prop="2" width="420" /> <!-- 显示哈希CID -->
+                    <el-table-column label="大小KB" prop="3" /> <!-- 显示文件大小 -->
+                    <el-table-column label="操作"> <!-- 显示操作按钮列 -->
+                        <template #default="{ row }">
+                            <el-button @click="downloadFile(row[4], row[0], row[2])" type="info" plain
+                                style="width: 80%;">下载</el-button> <!-- 按钮点击触发下载文件函数 -->
+                        </template>
+                    </el-table-column>
+                </el-table>
+
+                <div style="margin-top: 10px;">
+                    <el-button type="primary" plain @click="toggleSelection(group.files)">
+                        下载所选文件
+                    </el-button> <!-- 点击下载所选文件按钮 -->
+                    <el-button type="primary" plain @click="toggleSelection()">
+                        清除选择
+                    </el-button> <!-- 点击清除选择按钮 -->
                 </div>
-
-                <div class="files" v-if="expandedGroups.includes(group.info.id)">
-                    <div class="no-file" v-if="group.files.length === 0">
-                        该群组现在还没有任何文件，请联系群主上传🤗
+            </div>
+            <div v-else>
+                <div class="groups" v-for="group in memberGroup" :key="group.info">
+                    <div class="group-item" @click="toggleFiles(group.info.id)">
+                        <div style="display: flex; align-items: center;">
+                            <div class="status"></div>
+                        </div>
+                        <div class="group">
+                            <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
+                            <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
+                        </div>
+                        <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
+                        </div>
+                        <div class="description" v-else>无介绍</div>
+                        <div class="buttons">
+                            <el-button type="primary" plain class="upload-button"
+                                @click.stop="downloadAll(group.info.id)">
+                                <el-icon color="#409efc">
+                                    <Download style="width: 20px;" />
+                                </el-icon> 全部下载
+                            </el-button>
+                            <el-button type="danger" plain class="disband-button"
+                                @click.stop="quitGroup(group.info.id)">
+                                <el-icon color="#f56c6c">
+                                    <CircleCloseFilled style="width: 20px;" />
+                                </el-icon> 退出群组
+                            </el-button>
+                        </div>
                     </div>
 
-                    <div v-else class="have-file">
-                        <el-table :data="group.files" style="width: 100%;" @selection-change="handleSelectionChange">
-                            <el-table-column type="selection" width="30" />
-                            <el-table-column label="文件名" prop="0" width="150" />
-                            <el-table-column label="时间" prop="1" width="100" />
-                            <el-table-column label="哈希CID" prop="2" width="420" />
-                            <el-table-column label="大小Mb" prop="3" />
-                            <el-table-column label="操作">
-                                <template #default="{ row }">
-                                    <el-button @click="downloadFile(group.info.id, row[0], row[2])" type="info" plain
-                                        style="width: 80%;">下载</el-button>
-                                </template>
-                            </el-table-column>
-                        </el-table>
-                        <div style="margin-top: 10px;">
-                            <el-button type="primary" plain @click="toggleSelection(group.files)">
-                                下载所选文件
-                            </el-button>
-                            <el-button type="primary" plain @click="toggleSelection()">
-                                清除选择
-                            </el-button>
+                    <div class="files" v-if="expandedGroups.includes(group.info.id)">
+                        <div class="no-file" v-if="group.files.length === 0">
+                            该群组现在还没有任何文件，请联系群主上传🤗
+                        </div>
+
+                        <div v-else class="have-file">
+                            <el-table :data="group.files" style="width: 100%;"
+                                @selection-change="handleSelectionChange">
+                                <el-table-column type="selection" width="30" />
+                                <el-table-column label="文件名" prop="0" width="150" />
+                                <el-table-column label="时间" prop="1" width="100" />
+                                <el-table-column label="哈希CID" prop="2" width="420" />
+                                <el-table-column label="大小KB" prop="3" />
+                                <el-table-column label="操作">
+                                    <template #default="{ row }">
+                                        <el-button @click="downloadFile(group.info.id, row[0], row[2])" type="info"
+                                            plain style="width: 80%;">下载</el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                            <div style="margin-top: 10px;">
+                                <el-button type="primary" plain @click="toggleSelection(group.files)">
+                                    下载所选文件
+                                </el-button>
+                                <el-button type="primary" plain @click="toggleSelection()">
+                                    清除选择
+                                </el-button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
+
         <el-dialog v-model="toBeConfirmedVisible" title="待确认的请求" width="800">
             <el-table :data="toBeConfirmed">
-                <el-table-column type="index"/>
+                <el-table-column type="index" />
                 <el-table-column label="群主ID" prop="owner_id" />
                 <el-table-column label="群组ID" prop="group_id" />
                 <el-table-column label="状态" prop="status" />
@@ -141,9 +172,26 @@ export default {
                 groupId: '',
             },
             expandedGroups: [],
+            filteredFiles: [],
+            searchKeyword: '',
         };
     },
     methods: {
+        searchFiles() {
+            this.filteredFiles = [];
+            // const keyword = this.searchKeyword.trim();
+            const keyword = this.searchKeyword;
+            console.log("keyword", keyword);
+            this.memberGroup.forEach(group => {
+                group.files.forEach(file => {
+                    if (file[0].includes(keyword) || file[2].includes(keyword)) {
+                        file.push(group.info.id);
+                        this.filteredFiles.push(file);
+                        // alert(file);
+                    }
+                });
+            });
+        },
         async sendUserId() {
             const response = await axios.post('http://localhost:5000/request_group_files', {
                 userId: this.$route.params.userId
@@ -178,17 +226,14 @@ export default {
                 group_id: groupId,
             });
             if (response.status === 200) {
-                console.log(response.data.requests)
-                if (response.data.requests.length == 0) {
-                    return;
-                }
+                console.log(response.data)
             } else {
                 alert("请求失败，请联系开发人员");
             }
 
             // 找到要移除的数据的索引
             const index = this.toBeConfirmed.findIndex(item => item.owner_id === ownerId && item.group_id === groupId);
-            
+
             if (index !== -1) {
                 // 如果找到了匹配的数据，则移除
                 this.toBeConfirmed.splice(index, 1);
@@ -206,18 +251,18 @@ export default {
         async joinGroup() {
             try {
                 const response = await axios.post('http://localhost:5000/request_access', {
-                        group_id: this.form.groupId,
-                        user_id: this.$route.params.userId,
-                        current_time: this.getCurrentTime(),
-                    })                
-                    if (response.status === 200) {
-                        alert("已申请");
-                    } else {
-                        alert("申请失败");
-                    }
-                } catch (error) {
-                    console.log(error);
-                    alert("出现错误，联系开发人员");
+                    group_id: this.form.groupId,
+                    user_id: this.$route.params.userId,
+                    current_time: this.getCurrentTime(),
+                })
+                if (response.status === 200) {
+                    alert("已申请");
+                } else {
+                    alert("申请失败");
+                }
+            } catch (error) {
+                console.log(error);
+                alert("出现错误，联系开发人员");
             }
             this.dialogFormVisible = false;
         },
@@ -250,13 +295,14 @@ export default {
         async downloadFile(groupId, fileName, fileHash) {
             try {
                 const files = await this.ipfs.cat(fileHash);
+                console.log(files);
                 const content = [];
                 for await (const chunk of files) {
                     content.push(chunk);
                 }
 
                 const blob = new Blob(content, { type: 'application/octet-stream' });
-                
+
                 const key = await this.getFileKey(groupId);
 
                 console.log("Key:", key);
@@ -372,7 +418,7 @@ export default {
 .search-button {
     padding: 10px 20px;
     border: none;
-    background-color: #81afb4;
+    background-color: #1eb5c6;
     color: white;
     border-radius: 5px;
     cursor: pointer;
