@@ -19,6 +19,10 @@
             <div class="create">
                 <button class="create-button" @click="dialogFormVisible = true">修改个人信息</button>
             </div>
+
+            <div class="exit">
+                <button class="exit-button" @click=exit()>退出登录</button>
+            </div>
 ``
             <el-dialog v-model="dialogFormVisible" title="修改信息" width="500">
                     <el-form :model="form">
@@ -86,6 +90,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 // import axios from 'axios';
 
 export default {
@@ -152,6 +158,21 @@ export default {
         },
         changeUserInfo() {
             this.dialogFormVisible = false;
+        },
+        async exit() {
+            try {
+                const response = await axios.post("http://localhost:5000/logout", {
+                    user_id: this.$route.params.userId
+                })
+                if (response.status == 200) {
+                    console.log("退出成功");
+                    this.$router.push('/');
+                } else {
+                    console.log("退出失败");
+                }
+            } catch (error) {
+                console.log(error);
+            }
         }
     },
     mounted() {
@@ -245,11 +266,27 @@ export default {
     display: flex;
 }
 
+.exit {
+    display: flex;
+}
+
 .create-button {
     padding: 10px 20px;
     margin-left: 10px;
     border: none;
     background-color: #234d64;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-weight: 700;
+}
+
+.exit-button {
+    padding: 10px 20px;
+    margin-left: 10px;
+    border: none;
+    background-color: #920202;
     color: white;
     border-radius: 5px;
     cursor: pointer;
