@@ -70,7 +70,7 @@
             </div>
         </div>
 
-        <h1 class="no-group" v-if="noGroup == true">您还没有创建群组，点击右上角 <b>创建</b> 🤗</h1>
+        <h2 class="no-group" v-if="noGroup == true">您还没有创建群组，点击右上角 <b>创建</b> 🤗</h2>
 
         <div v-else>
             <div class="groups" v-for="group in ownerGroup" :key="group.info">

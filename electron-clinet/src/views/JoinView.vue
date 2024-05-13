@@ -26,7 +26,7 @@
             </el-dialog>
         </div>
 
-        <h1 class="no-group" v-if="noGroup == true">您还没有加入群组，点击右上角 <b>加入</b> 🤗</h1>
+        <h2 class="no-group" v-if="noGroup == true">您还没有加入群组，点击右上角 <b>加入</b> 🤗</h2>
 
         <div>
             <div class="groups" v-for="group in memberGroup" :key="group.info">
