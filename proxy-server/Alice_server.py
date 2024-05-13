@@ -23,7 +23,7 @@ CORS(app)
 # app.config["SESSION_PERMANENT"] = False
 # app.config["SESSION_TYPE"] = "filesystem"
 # Session(app)
-port = 5000
+port = 5002
 proxy_address = "10.122.236.111"
 proxy_port = 5000
 # conn = sqlite3.connect("owner.db")
@@ -407,6 +407,35 @@ def request_group_files():
         'requester_id': requester_id,
     }
     response = requests.post(f'http://{proxy_address}:{proxy_port}/request_group_files', json=data_)
+    print(json.loads(response.text)['files_info'])
+    if response.status_code == 200:
+        return jsonify(
+            {'message': 'Request submitted successfully!', 'files': json.loads(response.text)['files_info']}), 200
+    else:
+        return jsonify({'message': 'Request failed!'}), 400
+
+
+@app.route('/get_my_group_files', methods=['POST'])
+def get_my_group_files():
+    data = request.json
+    groups_ids = []
+    requester_id = data['userId']
+    print(requester_id)
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    c.execute("SELECT group_id FROM KeyTable WHERE file_key IS NOT NULL")
+    rows = c.fetchall()
+
+    for row in rows:
+        groups_ids.append(row[0])
+    # print(groups_ids)
+
+    data_ = {
+        'groups_ids': groups_ids,
+        'requester_id': requester_id,
+    }
+    response = requests.post(f'http://{proxy_address}:{proxy_port}/get_my_group_files', json=data_)
     print(json.loads(response.text)['files_info'])
     if response.status_code == 200:
         return jsonify(

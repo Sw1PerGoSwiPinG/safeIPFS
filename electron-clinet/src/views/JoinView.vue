@@ -147,6 +147,7 @@ export default {
             });
             if (response.status === 200) {
                 this.memberGroup = response.data.files;
+                this.memberGroup = response.data.files;
                 console.log(response.data.files)
             } else {
                 alert("请求失败，请联系开发人员");
