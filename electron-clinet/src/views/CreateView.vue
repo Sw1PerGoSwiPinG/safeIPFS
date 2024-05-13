@@ -22,12 +22,12 @@
                 <button class="create-button" @click="dialogFormVisible = true"><span style="color: #69c4cd;">+</span>
                     创建群组</button>
 
-                <el-dialog v-model="dialogFormVisible" title="Shipping address" width="500">
+                <el-dialog v-model="dialogFormVisible" title="创建群组" width="500">
                     <el-form :model="form">
-                        <el-form-item label="Group name" :label-width="formLabelWidth">
+                        <el-form-item label="群组名称" :label-width="formLabelWidth">
                             <el-input v-model="form.group_name" autocomplete="off" />
                         </el-form-item>
-                        <el-form-item label="Group description" :label-width="formLabelWidth">
+                        <el-form-item label="群组描述" :label-width="formLabelWidth">
                             <!-- <el-select v-model="form.region" placeholder="Please select a zone">
                             <el-option label="Zone No.1" value="shanghai" />
                             <el-option label="Zone No.2" value="beijing" />
@@ -52,14 +52,16 @@
             <div class="requests">
                 <el-table :data="requests" style="width: 100%;">
                     <el-table-column type="index" width="30" />
-                    <el-table-column label="申请者" prop="requester_id"/>
-                    <el-table-column label="群组ID" prop="group_id"/>
-                    <el-table-column label="申请时间" prop="time"/>
+                    <el-table-column label="申请者" prop="requester_id" />
+                    <el-table-column label="群组ID" prop="group_id" />
+                    <el-table-column label="申请时间" prop="time" />
                     <el-table-column label="操作">
                         <template #default="{ row }">
                             <div>
-                                <el-button @click="permit(row.requester_id, row.group_id, true)" type="info" plain style="width: 40%;">同意</el-button>
-                                <el-button @click="permit(row.requester_id, row.group_id, false)" type="info" plain style="width: 40%;">拒绝</el-button>
+                                <el-button @click="permit(row.requester_id, row.group_id, true)" type="info" plain
+                                    style="width: 40%;">同意</el-button>
+                                <el-button @click="permit(row.requester_id, row.group_id, false)" type="info" plain
+                                    style="width: 40%;">拒绝</el-button>
                             </div>
                         </template>
                     </el-table-column>
@@ -90,13 +92,14 @@
                     </div>
                     <div class="description" v-else>无介绍</div>
                     <div class="buttons">
-                        <input type="file" plain class="upload-button" @change="uploadFile($event, group.info.id)">
-                        <!-- <el-button type="primary" plain class="upload-button" @click="uploadFile">
+                        <!-- <input type="file" plain class="upload-button" @change="uploadFile($event, group.info.id)"> -->
+                        <el-button type="primary" plain class="show-upload" @click.stop="showUploadDialog()">
                             <el-icon color="#409efc">
                                 <UploadFilled style="width: 20px;" />
                             </el-icon> 上传文件
-                        </el-button> -->
-                        <el-button type="danger" plain class="disband-button">
+                        </el-button>
+
+                        <el-button type="danger" plain class="disband-button" @click.stop="disbandGroup()">
                             <el-icon color="#f56c6c">
                                 <RemoveFilled style="width: 20px;" />
                             </el-icon> 解散群组
@@ -109,7 +112,7 @@
                         <span style="font-size: large;">现在还没有任何文件！使用上方的 <b>上传</b> 按钮为您的本地IPFS 节点添加文件。</span>
                     </div>
                     <div v-else class="have-file">
-                        <el-table stripe :data="group.files" style="width: 100%;"
+                        <el-table :data="group.files" style="width: 100%;"
                             @selection-change="handleSelectionChange">
                             <el-table-column type="selection" width="30" />
                             <el-table-column label="文件名" prop="0" width="150" />
@@ -134,6 +137,28 @@
                         </div>
                     </div>
                 </div>
+
+                <el-dialog v-model="uploadVisible" title="" width="400" align-center>
+                    <el-upload
+                        ref="upload"
+                        class="upload-file"
+                        action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
+                        :limit="1"
+                        :on-exceed="handleExceed"
+                        :auto-upload="false"
+                        @change="handleFileChange"
+                    >
+                        <template #trigger>
+                            <el-button type="primary" plain>选择文件</el-button>
+                        </template>
+                        <template #tip>
+                            <div class="el-upload__tip text-red"></div>
+                        </template>
+                        <el-button class="ml-3" type="success" plain @click="uploadFile(group.info.id)" style="margin-left: 20px">
+                            上传IPFS
+                        </el-button>
+                    </el-upload>
+                </el-dialog>
             </div>
         </div>
     </div>
@@ -143,7 +168,7 @@
 <script>
 import axios from 'axios';
 // import { ref, nextTick, onMounted } from 'vue'
-import { ref } from 'vue'
+// import { ref } from 'vue'
 import { ElTable, ElButton } from 'element-plus'
 import CryptoService from '@/services/CryptoService';
 import { AddKeyToTable, SearchFromKeyTable } from '@/services/DataBase';
@@ -156,28 +181,16 @@ export default {
     data() {
         return {
             ipfs: null,
-            ownerGroup: [
-                {
-                    "info": {
-                        "id": "987654321",
-                        "name": "热门动作电影",
-                        "description": "用来存放一些电影",
-                    },
-                    "files": [
-                        ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560", "26"],
-                        ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6", "18"]
-                    ]
-                }
-            ],
+            ownerGroup: [],
             expandedGroups: [],
             dialogFormVisible: false,
+            uploadVisible: false,
+            file: null,
             form: {
                 group_name: '',
                 group_description: '',
             },
             requests: [],
-            multipleTableRef: ref(null),
-            multipleSelection: ref([]),
         };
     },
     methods: {
@@ -225,6 +238,7 @@ export default {
             // var file_key = await CryptoService.generateAESKey();
             var file_key = await this.getKeyAsHexString();
             // console.log(this.importKeyFromHex(file_key));
+
             try {
                 const response = await axios.post('http://localhost:5000/create_group', {
                     user_id: user_id,
@@ -253,13 +267,13 @@ export default {
 
         },
         async permit(userId, groupId, allowed) {
-            if (allowed) {                
+            if (allowed) {
                 try {
                     const response = await axios.post('http://localhost:5000/get_public_key', {
                         owner_id: this.$route.params.userId,
                         requester_id: userId,
                         group_id: groupId,
-                    })                
+                    })
                     if (response.status === 200) {
                         alert("已同意");
                     } else {
@@ -276,15 +290,20 @@ export default {
             console.log(userId)
             console.log(groupId)
             // 找到要移除的数据的索引
-            const index = this.requests.findIndex(request => request.requester_id === parseInt(userId) && request.group_id === groupId);
+            const index = this.requests.findIndex(request => request.requester_id === userId && request.group_id === groupId);
             
             if (index !== -1) {
                 // 如果找到了匹配的数据，则移除
                 this.requests.splice(index, 1);
                 console.log(`已成功移除请求：requester_id=${userId}, group_id=${groupId}`);
             } else {
-                alert("未成功移除")
+                alert("未成功移除");
             }
+        },
+        handleAll(allowed) {
+            this.requests.forEach(request => {
+                this.permit(request.userId, request.groupId, allowed);
+            })
         },
         async refresh() {
             try {
@@ -296,7 +315,34 @@ export default {
             } catch (error) {
                 console.log(error);
                 alert("出现错误，联系开发人员");
-            }            
+            }
+        },
+        async getMyGroupAndFiles() {
+            // try {
+            //     const response = await axios.post('http://localhost:5000/get_requests', {
+            //         user_id: this.$route.params.userId,
+            //     })
+            //     console.log(response.data.requests);
+            //     this.ownerGroup = response.data.requests;
+            // } catch (error) {
+            //     console.log(error);
+            //     alert("出现错误，联系开发人员");
+            // }
+            this.ownerGroup.push(
+                {
+                    "info": {"id": "987654321", "name": "热门动作电影", "description": "用来存放一些电影", },
+                    "files": [
+                        ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560", "26"],
+                        ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6", "18"]
+                    ]
+                }
+            )
+        },
+        disbandGroup(groupId) {
+            console.log(`解散 ${groupId} 号群组`);
+        },
+        showUploadDialog() {
+            this.uploadVisible = true;
         },
         toggleGroups(groupId) {
             if (this.expandedGroups.includes(groupId)) {
@@ -331,10 +377,14 @@ export default {
                 console.error('Error removing the file:', error);
             }
         },
-        async uploadFile(event, groupId) {
-            console.log(groupId);
-            const file = event.target.files[0];
-
+        handleFileChange(file) {
+            this.file = file.raw;
+            console.log(this.file);
+        },
+        // async uploadFile(event, groupId) {                        
+        async uploadFile(groupId) {                        
+            // const file = event.target.files[0];
+            const file = this.file;
             if (!file) {
                 return;
             }
@@ -417,7 +467,8 @@ export default {
         }
     },
     mounted() {
-        this.refresh();
+        // this.refresh();
+        this.getMyGroupAndFiles();
         this.ipfs = create("http://localhost:5001/api/v0");
     }
     // mounted() {
@@ -577,6 +628,16 @@ export default {
     align-items: center;
     justify-content: center;
 }
+
+.uploadDialog {
+    display: flex;
+    flex-direction: column;
+}
+
+/* .upload-button {
+    width: 20%;
+    height: 10%;
+} */
 
 .files {
     width: 90%;

@@ -43,12 +43,12 @@
                     </div>
                     <div class="description" v-else>无介绍</div>
                     <div class="buttons">
-                        <el-button type="primary" plain class="upload-button">
+                        <el-button type="primary" plain class="upload-button" @click.stop="downloadAll(group.info.id)">
                             <el-icon color="#409efc">
                                 <Download style="width: 20px;" />
                             </el-icon> 全部下载
                         </el-button>
-                        <el-button type="danger" plain class="disband-button">
+                        <el-button type="danger" plain class="disband-button" @click.stop="quitGroup(group.info.id)">
                             <el-icon color="#f56c6c">
                                 <CircleCloseFilled style="width: 20px;" />
                             </el-icon> 退出群组
@@ -70,7 +70,7 @@
                             <el-table-column label="大小Mb" prop="3" />
                             <el-table-column label="操作">
                                 <template #default="{ row }">
-                                    <el-button @click="download(row[0], row[2])" type="info" plain
+                                    <el-button @click="downloadFile(group.info.id, row[0], row[2])" type="info" plain
                                         style="width: 80%;">下载</el-button>
                                 </template>
                             </el-table-column>
@@ -88,18 +88,55 @@
             </div>
         </div>
 
-    </div>
+        <el-dialog v-model="toBeConfirmedVisible" title="待确认的请求" width="800">
+            <el-table :data="toBeConfirmed">
+                <el-table-column type="index"/>
+                <el-table-column label="群主ID" prop="owner_id" />
+                <el-table-column label="群组ID" prop="group_id" />
+                <el-table-column label="状态" prop="status" />
+                <el-table-column label="操作">
+                    <template #default="{ row }">
+                        <div>
+                            <el-button @click="confirm(row.owner_id, row.group_id)" type="info" plain>确认</el-button>
+                        </div>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button type="success" @click="confirmAll()" plain>一键确认</el-button>
+                    <el-button type="info" @click="toBeConfirmedVisible = false" plain>稍后处理</el-button>
+                </div>
+            </template>
+        </el-dialog>
 
+    </div>
 </template>
 
 <script>
+import CryptoService from '@/services/CryptoService';
 import axios from 'axios';
+import { create } from 'kubo-rpc-client';
 
 export default {
     data() {
         return {
-            memberGroup: [],
+            ipfs: create('http://localhost:5001/api/v0'),
+            memberGroup: [
+                {
+                    "info": {
+                        "id": "45",
+                        "name": "豆瓣top100电影",
+                        "description": "用来存放一些电影",
+                    },
+                    "files": [
+                        ["第二次作业-李旭桓-2021212066.pdf", "2024-05-12", "QmYNvyXB6TQ5a3fJWcVJnWV1irJyjG1EADwvqBu4d2iMSM", "2560"],
+                    ]
+                },
+            ],
             dialogFormVisible: false,
+            toBeConfirmedVisible: false,
+            toBeConfirmed: [],
             form: {
                 groupId: '',
             },
@@ -118,6 +155,53 @@ export default {
                 alert("请求失败，请联系开发人员");
             }
         },
+        async getToBeConfirmed() {
+            const response = await axios.post('http://localhost:5000/get_approved_requests', {
+                requester_id: this.$route.params.userId
+            });
+            if (response.status === 200) {
+                console.log(response.data.requests)
+                if (response.data.requests.length == 0) {
+                    return;
+                }
+                this.toBeConfirmed = response.data.requests;
+            } else {
+                alert("请求失败，请联系开发人员");
+            }
+            this.toBeConfirmedVisible = true;
+        },
+        async confirm(ownerId, groupId) {
+            const response = await axios.post('http://localhost:5000/process_approved_request', {
+                user_id: this.$route.params.userId,
+                owner_id: ownerId,
+                group_id: groupId,
+            });
+            if (response.status === 200) {
+                console.log(response.data.requests)
+                if (response.data.requests.length == 0) {
+                    return;
+                }
+            } else {
+                alert("请求失败，请联系开发人员");
+            }
+
+            // 找到要移除的数据的索引
+            const index = this.toBeConfirmed.findIndex(item => item.owner_id === ownerId && item.group_id === groupId);
+            
+            if (index !== -1) {
+                // 如果找到了匹配的数据，则移除
+                this.toBeConfirmed.splice(index, 1);
+                console.log(`已成功移除待确认请求`);
+            } else {
+                alert("未成功移除");
+            }
+        },
+        confirmAll() {
+            this.toBeConfirmed.forEach(item => {
+                this.confirm(item.ownerId, item.groupId);
+            })
+            this.toBeConfirmedVisible = true;
+        },
         async joinGroup() {
             try {
                 const response = await axios.post('http://localhost:5000/request_access', {
@@ -135,6 +219,12 @@ export default {
                     alert("出现错误，联系开发人员");
             }
             this.dialogFormVisible = false;
+        },
+        downloadAll(groupId) {
+            console.log(`下载了群组 ${groupId} 所有文件`);
+        },
+        quitGroup(groupId) {
+            console.log(`退出群组 ${groupId}`);
         },
         toggleFiles(groupId) {
             if (this.expandedGroups.includes(groupId)) {
@@ -156,8 +246,85 @@ export default {
         handleSelectionChange(val) {
             this.multipleSelection = val
         },
-        download(fileName, fileHash) {
-            console.log(`下载了${fileName}-${fileHash}`);
+        async downloadFile(groupId, fileName, fileHash) {
+            try {
+                const files = await this.ipfs.cat(fileHash);
+                const content = [];
+                for await (const chunk of files) {
+                    content.push(chunk);
+                }
+
+                const blob = new Blob(content, { type: 'application/octet-stream' });
+                
+                const key = await this.getFileKey(groupId);
+
+                console.log("Key:", key);
+                try {
+                    const decryptedBlob = await CryptoService.decryptFile(blob, key);
+
+                    const url = URL.createObjectURL(decryptedBlob);
+
+                    // 创建下载链接
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // 清理
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error('下载文件时出错:', error);
+                }
+            } catch (error) {
+                console.error('下载文件时出错:', error);
+            }
+            // console.log(`下载了${fileName}-${fileHash}`);
+        },
+        async getFileKey(groupId) {
+            try {
+                const response = await axios.post('http://localhost:5000/get_file_key', {
+                    group_id: groupId,
+                });
+                if (response.status === 200) {
+                    console.log(response.data);
+                    const key = await this.importKeyFromHex(response.data.file_key);
+                    console.log("Key imported successfully again:", key);
+                    return key;
+                } else {
+                    alert("请求失败，无法获取文件密钥");
+                }
+            } catch (error) {
+                console.log(error);
+                alert("出现错误，联系开发人员");
+            }
+        },
+        async importKeyFromHex(hexString) {
+            const keyBuffer = this.hexToBuffer(hexString);
+            const keyAlgorithm = {
+                name: "AES-CBC",
+                length: 256 // 确保这里的长度和算法与你原始生成密钥时使用的设置匹配
+            };
+            const key = await window.crypto.subtle.importKey(
+                "raw", // 密钥格式
+                keyBuffer, // 十六进制字符串转换来的ArrayBuffer
+                keyAlgorithm, // 定义密钥的算法
+                true, // 是否可导出
+                ["encrypt", "decrypt"] // 密钥用途
+            );
+            console.log("Key imported successfully:", key);
+            return key;
+        },
+        hexToBuffer(hexString) {
+            const length = hexString.length / 2;
+            const buffer = new Uint8Array(length);
+            for (let i = 0; i < length; i++) {
+                const index = i * 2;
+                const byteValue = parseInt(hexString.substring(index, index + 2), 16);
+                buffer[i] = byteValue;
+            }
+            return buffer.buffer; // 返回ArrayBuffer
         },
         getCurrentTime() {
             const currentDate = new Date();
@@ -179,6 +346,7 @@ export default {
     mounted() {
         console.log("start send!");
         this.sendUserId();
+        this.getToBeConfirmed();
     }
 }
 </script>
