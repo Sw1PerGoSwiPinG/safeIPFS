@@ -327,13 +327,7 @@ def process_approved_request():
     conn.commit()
     conn.close()
     return (
-        jsonify(
-            {
-                "message": "Request processed successfully!",
-                "decrypted_file_key": file_key,
-            }
-        ),
-        200,
+        jsonify({"message": "Request processed successfully!",}), 200,
     )
 
 
