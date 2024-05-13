@@ -123,16 +123,16 @@ export default {
         return {
             ipfs: create('http://localhost:5001/api/v0'),
             memberGroup: [
-                {
-                    "info": {
-                        "id": "45",
-                        "name": "豆瓣top100电影",
-                        "description": "用来存放一些电影",
-                    },
-                    "files": [
-                        ["第二次作业-李旭桓-2021212066.pdf", "2024-05-12", "QmYNvyXB6TQ5a3fJWcVJnWV1irJyjG1EADwvqBu4d2iMSM", "2560"],
-                    ]
-                },
+                // {
+                //     "info": {
+                //         "id": "45",
+                //         "name": "豆瓣top100电影",
+                //         "description": "用来存放一些电影",
+                //     },
+                //     "files": [
+                //         ["第二次作业-李旭桓-2021212066.pdf", "2024-05-12", "QmYNvyXB6TQ5a3fJWcVJnWV1irJyjG1EADwvqBu4d2iMSM", "2560"],
+                //     ]
+                // },
             ],
             dialogFormVisible: false,
             toBeConfirmedVisible: false,
@@ -149,6 +149,7 @@ export default {
                 userId: this.$route.params.userId
             });
             if (response.status === 200) {
+                this.memberGroup = response.data.files;
                 this.memberGroup = response.data.files;
                 console.log(response.data.files)
             } else {
