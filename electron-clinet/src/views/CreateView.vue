@@ -52,14 +52,16 @@
             <div class="requests">
                 <el-table :data="requests" style="width: 100%;">
                     <el-table-column type="index" width="30" />
-                    <el-table-column label="申请者" prop="requester_id"/>
-                    <el-table-column label="群组ID" prop="group_id"/>
-                    <el-table-column label="申请时间" prop="time"/>
+                    <el-table-column label="申请者" prop="requester_id" />
+                    <el-table-column label="群组ID" prop="group_id" />
+                    <el-table-column label="申请时间" prop="time" />
                     <el-table-column label="操作">
                         <template #default="{ row }">
                             <div>
-                                <el-button @click="permit(row.requester_id, row.group_id, true)" type="info" plain style="width: 40%;">同意</el-button>
-                                <el-button @click="permit(row.requester_id, row.group_id, false)" type="info" plain style="width: 40%;">拒绝</el-button>
+                                <el-button @click="permit(row.requester_id, row.group_id, true)" type="info" plain
+                                    style="width: 40%;">同意</el-button>
+                                <el-button @click="permit(row.requester_id, row.group_id, false)" type="info" plain
+                                    style="width: 40%;">拒绝</el-button>
                             </div>
                         </template>
                     </el-table-column>
@@ -225,6 +227,7 @@ export default {
             // var file_key = await CryptoService.generateAESKey();
             var file_key = await this.getKeyAsHexString();
             // console.log(this.importKeyFromHex(file_key));
+
             try {
                 const response = await axios.post('http://localhost:5000/create_group', {
                     user_id: user_id,
@@ -253,13 +256,13 @@ export default {
 
         },
         async permit(userId, groupId, allowed) {
-            if (allowed) {                
+            if (allowed) {
                 try {
                     const response = await axios.post('http://localhost:5000/get_public_key', {
                         owner_id: this.$route.params.userId,
                         requester_id: userId,
                         group_id: groupId,
-                    })                
+                    })
                     if (response.status === 200) {
                         alert("已同意");
                     } else {
@@ -277,7 +280,7 @@ export default {
             console.log(groupId)
             // 找到要移除的数据的索引
             const index = this.requests.findIndex(request => request.requester_id === parseInt(userId) && request.group_id === groupId);
-            
+
             if (index !== -1) {
                 // 如果找到了匹配的数据，则移除
                 this.requests.splice(index, 1);
@@ -296,7 +299,7 @@ export default {
             } catch (error) {
                 console.log(error);
                 alert("出现错误，联系开发人员");
-            }            
+            }
         },
         toggleGroups(groupId) {
             if (this.expandedGroups.includes(groupId)) {
