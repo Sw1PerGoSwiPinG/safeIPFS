@@ -175,22 +175,13 @@ export default {
             });
             if (response.status === 200) {
                 console.log("已确认");
+                return;
             } else {
                 alert("请求失败，请联系开发人员");
+                return;
             }
 
-            // 找到要移除的数据的索引
-            const index = this.toBeConfirmed.findIndex(item => item.owner_id === ownerId && item.group_id === groupId);
-            
-            if (index !== -1) {
-                // 如果找到了匹配的数据，则移除
-                this.toBeConfirmed.splice(index, 1);
-                console.log(`已成功移除待确认请求`);
-            } else {
-                alert("未成功移除");
-            }
 
-            this.getMemberGroups();
         },
         confirmAll() {
             this.toBeConfirmed.forEach(item => {

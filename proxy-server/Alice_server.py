@@ -30,9 +30,10 @@ proxy_port = 5000
 
 import sqlite3
 
+CURRENT_USER = ''
 
 def get_db_connection():
-    conn = sqlite3.connect("owner.db")
+    conn = sqlite3.connect(f"{CURRENT_USER}.db")
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -59,6 +60,22 @@ def login():
         print("Login successful")
         # session["user_id"] = username
         # print(session["user_id"])
+        global CURRENT_USER
+        CURRENT_USER = username
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS KeyTable (
+                group_id INTEGER PRIMARY KEY,
+                file_key TEXT,
+                public_key TEXT,
+                private_key TEXT
+            )
+            """
+        )
+        conn.commit()
+        conn.close()
         return jsonify({"message": "Login successful", "user_id": username})
         # return redirect(url_for('dashboard'))
     else:
@@ -86,6 +103,22 @@ def register():
     response = requests.post(f"http://{proxy_address}:{proxy_port}/register", json=data)
     if response.status_code == 200:
         print("Register successful")
+        global CURRENT_USER
+        CURRENT_USER = username
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS KeyTable (
+                group_id INTEGER PRIMARY KEY,
+                file_key TEXT,
+                public_key TEXT,
+                private_key TEXT
+            )
+            """
+        )
+        conn.commit()
+        conn.close()
         return jsonify({"message": "Register successful", "user_id": username})
     else:
         print("Register failed")
@@ -300,6 +333,8 @@ def process_approved_request():
     c.execute("SELECT * FROM KeyTable WHERE group_id = ?", (group_id,))
     result = c.fetchone()
     conn.close()
+    print(result)
+
     requester_secret_key_bytes = result["private_key"]
     cfrag = VerifiedCapsuleFrag.from_verified_bytes(bytes.fromhex(cfrag_bytes))
     capsule = Capsule.from_bytes(bytes.fromhex(capsule_bytes))
