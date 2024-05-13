@@ -70,7 +70,7 @@
                             <el-table-column label="大小Mb" prop="3" />
                             <el-table-column label="操作">
                                 <template #default="{ row }">
-                                    <el-button @click="download(row[0], row[2])" type="info" plain
+                                    <el-button @click="downloadFile(group.info.id, row[0], row[2])" type="info" plain
                                         style="width: 80%;">下载</el-button>
                                 </template>
                             </el-table-column>
@@ -114,21 +114,23 @@
 </template>
 
 <script>
+import CryptoService from '@/services/CryptoService';
 import axios from 'axios';
+import { create } from 'kubo-rpc-client';
 
 export default {
     data() {
         return {
+            ipfs: create('http://localhost:5001/api/v0'),
             memberGroup: [
                 {
                     "info": {
-                        "id": "987654321",
-                        "name": "热门动作电影",
+                        "id": "45",
+                        "name": "豆瓣top100电影",
                         "description": "用来存放一些电影",
                     },
                     "files": [
-                        ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560"],
-                        ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6"]
+                        ["第二次作业-李旭桓-2021212066.pdf", "2024-05-12", "QmYNvyXB6TQ5a3fJWcVJnWV1irJyjG1EADwvqBu4d2iMSM", "2560"],
                     ]
                 },
             ],
@@ -147,7 +149,7 @@ export default {
                 userId: this.$route.params.userId
             });
             if (response.status === 200) {
-                // this.memberGroup = response.data.groups;
+                this.memberGroup = response.data.files;
                 console.log(response.data.files)
             } else {
                 alert("请求失败，请联系开发人员");
@@ -244,8 +246,85 @@ export default {
         handleSelectionChange(val) {
             this.multipleSelection = val
         },
-        download(fileName, fileHash) {
-            console.log(`下载了${fileName}-${fileHash}`);
+        async downloadFile(groupId, fileName, fileHash) {
+            try {
+                const files = await this.ipfs.cat(fileHash);
+                const content = [];
+                for await (const chunk of files) {
+                    content.push(chunk);
+                }
+
+                const blob = new Blob(content, { type: 'application/octet-stream' });
+                
+                const key = await this.getFileKey(groupId);
+
+                console.log("Key:", key);
+                try {
+                    const decryptedBlob = await CryptoService.decryptFile(blob, key);
+
+                    const url = URL.createObjectURL(decryptedBlob);
+
+                    // 创建下载链接
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // 清理
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error('下载文件时出错:', error);
+                }
+            } catch (error) {
+                console.error('下载文件时出错:', error);
+            }
+            // console.log(`下载了${fileName}-${fileHash}`);
+        },
+        async getFileKey(groupId) {
+            try {
+                const response = await axios.post('http://localhost:5000/get_file_key', {
+                    group_id: groupId,
+                });
+                if (response.status === 200) {
+                    console.log(response.data);
+                    const key = await this.importKeyFromHex(response.data.file_key);
+                    console.log("Key imported successfully again:", key);
+                    return key;
+                } else {
+                    alert("请求失败，无法获取文件密钥");
+                }
+            } catch (error) {
+                console.log(error);
+                alert("出现错误，联系开发人员");
+            }
+        },
+        async importKeyFromHex(hexString) {
+            const keyBuffer = this.hexToBuffer(hexString);
+            const keyAlgorithm = {
+                name: "AES-CBC",
+                length: 256 // 确保这里的长度和算法与你原始生成密钥时使用的设置匹配
+            };
+            const key = await window.crypto.subtle.importKey(
+                "raw", // 密钥格式
+                keyBuffer, // 十六进制字符串转换来的ArrayBuffer
+                keyAlgorithm, // 定义密钥的算法
+                true, // 是否可导出
+                ["encrypt", "decrypt"] // 密钥用途
+            );
+            console.log("Key imported successfully:", key);
+            return key;
+        },
+        hexToBuffer(hexString) {
+            const length = hexString.length / 2;
+            const buffer = new Uint8Array(length);
+            for (let i = 0; i < length; i++) {
+                const index = i * 2;
+                const byteValue = parseInt(hexString.substring(index, index + 2), 16);
+                buffer[i] = byteValue;
+            }
+            return buffer.buffer; // 返回ArrayBuffer
         },
         getCurrentTime() {
             const currentDate = new Date();
