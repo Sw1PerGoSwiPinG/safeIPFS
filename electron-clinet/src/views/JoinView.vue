@@ -7,8 +7,8 @@
             <div style="width: 40px;"></div>
 
             <div class="create">
-                <button @click="dialogFormVisible = true" class="create-button"><span style="color: #69c4cd;">+</span>
-                    加入群组</button>
+                <button @click="dialogFormVisible = true" class="create-button"><span style="color: #69c4cd;">+</span> 加入群组</button>
+                <button @click="refresh()" class="create-button">🆕刷新</button>
             </div>
 
             <el-dialog v-model="dialogFormVisible" title="申请信息" width="500">
@@ -20,15 +20,13 @@
                 <template #footer>
                     <div class="dialog-footer">
                         <el-button @click="dialogFormVisible = false">取消</el-button>
-                        <el-button type="primary" @click="joinGroup()">
-                            确定
-                        </el-button>
+                        <el-button type="primary" @click="joinGroup()">确定</el-button>
                     </div>
                 </template>
             </el-dialog>
         </div>
 
-        <h1 class="no-group" v-if="memberGroup.length === 0">您还没有加入群组，点击右上角 <b>加入</b> 🤗</h1>
+        <h2 class="no-group" v-if="noGroup == true">您还没有加入群组，点击右上角 <b>加入</b> 🤗</h2>
 
         <div v-else>
             <div v-if="searchKeyword" class="search-results">
@@ -148,23 +146,14 @@
 import CryptoService from '@/services/CryptoService';
 import axios from 'axios';
 import { create } from 'kubo-rpc-client';
+import CryptoJS from 'crypto-js';
 
 export default {
     data() {
         return {
             ipfs: create('http://localhost:5001/api/v0'),
-            memberGroup: [
-                // {
-                //     "info": {
-                //         "id": "45",
-                //         "name": "豆瓣top100电影",
-                //         "description": "用来存放一些电影",
-                //     },
-                //     "files": [
-                //         ["第二次作业-李旭桓-2021212066.pdf", "2024-05-12", "QmYNvyXB6TQ5a3fJWcVJnWV1irJyjG1EADwvqBu4d2iMSM", "2560"],
-                //     ]
-                // },
-            ],
+            memberGroup: [],
+            noGroup: false,
             dialogFormVisible: false,
             toBeConfirmedVisible: false,
             toBeConfirmed: [],
@@ -197,9 +186,16 @@ export default {
                 userId: this.$route.params.userId
             });
             if (response.status === 200) {
-                this.memberGroup = response.data.files;
-                this.memberGroup = response.data.files;
-                console.log(response.data.files)
+                if (response.data.files.length == 0) {
+                    this.noGroup = true;
+                } else {
+                    this.noGroup = false;
+                    this.memberGroup = response.data.files;
+                    this.memberGroup.forEach(group => {
+                        group.info.id = this.generateHash(group.info.id);
+                    });
+                }
+                console.log(response.data.files);
             } else {
                 alert("请求失败，请联系开发人员");
             }
@@ -251,20 +247,24 @@ export default {
         async joinGroup() {
             try {
                 const response = await axios.post('http://localhost:5000/request_access', {
-                    group_id: this.form.groupId,
-                    user_id: this.$route.params.userId,
-                    current_time: this.getCurrentTime(),
-                })
-                if (response.status === 200) {
-                    alert("已申请");
-                } else {
-                    alert("申请失败");
-                }
-            } catch (error) {
-                console.log(error);
-                alert("出现错误，联系开发人员");
+                        // group_id: this.form.groupId,
+                        group_id: this.extractNumber(this.form.groupId),
+                        user_id: this.$route.params.userId,
+                        current_time: this.getCurrentTime(),
+                    })                
+                    if (response.status === 200) {
+                        alert("已申请");
+                    } else {
+                        alert("申请失败");
+                    }
+                } catch (error) {
+                    console.log(error);
+                    alert("出现错误，联系开发人员");
             }
             this.dialogFormVisible = false;
+        },
+        refresh() {
+            this.getMemberGroups();
         },
         downloadAll(groupId) {
             console.log(`下载了群组 ${groupId} 所有文件`);
@@ -279,14 +279,18 @@ export default {
                 this.expandedGroups.push(groupId);
             }
         },
-        toggleSelection(files) {
-            if (files) {
-                files.forEach((file) => {
-                    this.remove(file[0], file[2]);
+        toggleSelection(groupId, clear) {
+            if (!clear) {
+                const removeFiles = [];
+                this.multipleSelection.forEach((file) => {
+                    removeFiles.push(file[0]);
                 });
-                this.$refs.multipleTableRef.clearSelection();
+                alert(`确定下载 ${removeFiles.toString()} 吗？`);
+                this.multipleSelection.forEach((file) => {
+                    this.downloadFile(groupId, file[0], file[2])
+                });
             } else {
-                this.$refs.multipleTableRef.clearSelection();
+                this.multipleTableRef.clearSelection();
             }
         },
         handleSelectionChange(val) {
@@ -327,7 +331,6 @@ export default {
             } catch (error) {
                 console.error('下载文件时出错:', error);
             }
-            // console.log(`下载了${fileName}-${fileHash}`);
         },
         async getFileKey(groupId) {
             try {
@@ -388,11 +391,21 @@ export default {
             const formattedDateTime = `${formattedDate}-${formattedTime}`;
 
             return formattedDateTime;
-        }
+        },
+        generateHash(num) {
+            let paddedNum = num.toString().padStart(3, '0');
+            let md5Hash = CryptoJS.MD5(paddedNum).toString();
+            let fakeHash = md5Hash.substring(0, 29) + paddedNum;
+            return fakeHash;
+        },
+        extractNumber(Hash) {
+            let realNumber = Hash.substring(29, 32);
+            realNumber = parseInt(realNumber, 10);
+            return realNumber;
+        },
     },
     mounted() {
-        console.log("start send!");
-        this.sendUserId();
+        this.getMemberGroups();
         this.getToBeConfirmed();
     }
 }
@@ -450,7 +463,7 @@ export default {
     width: 80%;
     height: 40px;
     margin-left: 10%;
-    padding-top: 10px;
+    padding-top: 20px;
 }
 
 .have-file {
