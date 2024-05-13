@@ -163,6 +163,8 @@ export default {
             expandedGroups: [],
             filteredFiles: [],
             searchKeyword: '',
+            multipleSelection: [],
+            multipleTableRef: null,
         };
     },
     methods: {
