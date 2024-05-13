@@ -364,8 +364,18 @@ export default {
         handleSelectionChange(val) {
             this.multipleSelection = val
         },
-        remove(fileName, fileHash) {
-            console.log(`移除了${fileName}-${fileHash}`);
+        async remove(fileName, fileHash) {
+            try {
+                await this.ipfs.pin.rm(fileHash);
+                console.log('File with CID:', fileHash, 'removed successfully');
+                console.log(`移除了${fileName}-${fileHash}`);
+                // TODO: 向后端发出删除数据库请求
+                this.ownerGroup.forEach(group => {
+                    group.files = group.files.filter(file => file[0] !== fileName);
+                });
+            } catch (error) {
+                console.error('Error removing the file:', error);
+            }
         },
         handleFileChange(file) {
             this.file = file.raw;
