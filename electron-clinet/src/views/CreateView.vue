@@ -328,15 +328,7 @@ export default {
             //     console.log(error);
             //     alert("出现错误，联系开发人员");
             // }
-            this.ownerGroup.push(
-                {
-                    "info": {"id": "987654321", "name": "热门动作电影", "description": "用来存放一些电影", },
-                    "files": [
-                        ["金蝉脱壳.mp4", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "2560", "26"],
-                        ["中南海保镖.zip", "2024-05-12", "QmU5EYHCZ5YuKfS6vuHkNZxMC9Up3RNbb8r3ypXJ8AsBzz", "1945.6", "18"]
-                    ]
-                }
-            )
+            console.log("获取我创建的群组");
         },
         disbandGroup(groupId) {
             console.log(`解散 ${groupId} 号群组`);

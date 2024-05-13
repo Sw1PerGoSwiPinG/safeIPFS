@@ -73,7 +73,7 @@ export default {
     flex-direction: column;
     align-items: center;
 
-    background-color: white;
+    background-color: #fbfbfb;
 	/* border: 1px solid #000; 显示边框 */
 	border-radius: 10px;
 	/* 圆角矩形 */

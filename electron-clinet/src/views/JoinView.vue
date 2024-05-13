@@ -27,9 +27,10 @@
             </el-dialog>
         </div>
 
-        <h1 class="no-group" v-if="memberGroup.length === 0">您还没有加入群组，点击右上角 <b>加入</b> 🤗</h1>
+        <!-- <h1 class="no-group" >您还没有加入群组，点击右上角 <b>加入</b> 🤗</h1>
+        <div v-if="memberGroup.length === 0"></div> -->
 
-        <div v-else>
+        <div>
             <div class="groups" v-for="group in memberGroup" :key="group.info">
                 <div class="group-item" @click="toggleFiles(group.info.id)">
                     <div style="display: flex; align-items: center;">
@@ -57,11 +58,7 @@
                 </div>
 
                 <div class="files" v-if="expandedGroups.includes(group.info.id)">
-                    <div class="no-file" v-if="group.files.length === 0">
-                        该群组现在还没有任何文件，请联系群主上传🤗
-                    </div>
-
-                    <div v-else class="have-file">
+                    <div v-if="group.files.length != 0" class="have-file">
                         <el-table :data="group.files" style="width: 100%;" @selection-change="handleSelectionChange">
                             <el-table-column type="selection" width="30" />
                             <el-table-column label="文件名" prop="0" width="150" />
@@ -123,16 +120,16 @@ export default {
         return {
             ipfs: create('http://localhost:5001/api/v0'),
             memberGroup: [
-                {
-                    "info": {
-                        "id": "45",
-                        "name": "豆瓣top100电影",
-                        "description": "用来存放一些电影",
-                    },
-                    "files": [
-                        ["第二次作业-李旭桓-2021212066.pdf", "2024-05-12", "QmYNvyXB6TQ5a3fJWcVJnWV1irJyjG1EADwvqBu4d2iMSM", "2560"],
-                    ]
-                },
+                // {
+                //     "info": {
+                //         "id": "45",
+                //         "name": "豆瓣top100电影",
+                //         "description": "用来存放一些电影",
+                //     },
+                //     "files": [
+                //         ["第二次作业-李旭桓-2021212066.pdf", "2024-05-12", "QmYNvyXB6TQ5a3fJWcVJnWV1irJyjG1EADwvqBu4d2iMSM", "2560"],
+                //     ]
+                // },
             ],
             dialogFormVisible: false,
             toBeConfirmedVisible: false,
@@ -144,7 +141,7 @@ export default {
         };
     },
     methods: {
-        async sendUserId() {
+        async getMemberGroups() {
             const response = await axios.post('http://localhost:5000/request_group_files', {
                 userId: this.$route.params.userId
             });
@@ -177,10 +174,7 @@ export default {
                 group_id: groupId,
             });
             if (response.status === 200) {
-                console.log(response.data.requests)
-                if (response.data.requests.length == 0) {
-                    return;
-                }
+                console.log("已确认");
             } else {
                 alert("请求失败，请联系开发人员");
             }
@@ -195,6 +189,8 @@ export default {
             } else {
                 alert("未成功移除");
             }
+
+            this.getMemberGroups();
         },
         confirmAll() {
             this.toBeConfirmed.forEach(item => {
@@ -344,8 +340,7 @@ export default {
         }
     },
     mounted() {
-        console.log("start send!");
-        this.sendUserId();
+        this.getMemberGroups();
         this.getToBeConfirmed();
     }
 }
