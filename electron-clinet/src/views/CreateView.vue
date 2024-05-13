@@ -364,12 +364,13 @@ export default {
                             group_id: groupId,
                             file_name: file_name,
                             ipfs_hash: ipfs_hash.toString(),
-                            // file_size: file.size
+                            file_size: blob.size,
+                            upload_date: new Date().toLocaleDateString(),
                         })
                         console.log(response.data.message);
                         this.ownerGroup.forEach(group => {
                             if (group.info.id === groupId) {
-                                group.files.push([file_name, new Date().toLocaleDateString(), ipfs_hash.toString(), (file.size / 1024).toFixed(2)]);
+                                group.files.push([file_name, new Date().toLocaleDateString(), ipfs_hash.toString(), (blob.size / (1024 * 1024)).toFixed(2)]);
                             }
                         });
                     } catch (error) {
@@ -407,7 +408,7 @@ export default {
     },
     mounted() {
         this.refresh();
-        this.ipfs = create("http://localhost:5001/api/v0")
+        this.ipfs = create("http://localhost:5001/api/v0");
     }
     // mounted() {
     //     // nextTick(() => {

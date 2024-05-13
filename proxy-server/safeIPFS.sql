@@ -28,6 +28,8 @@ CREATE TABLE files (
     group_id INT,
     file_name VARCHAR(255),
     ipfs_hash VARCHAR(255),
+    file_size VARCHAR(255),
+    upload_date VARCHAR(255),
     PRIMARY KEY (group_id, ipfs_hash)
 );
 CREATE TABLE request_cache (
