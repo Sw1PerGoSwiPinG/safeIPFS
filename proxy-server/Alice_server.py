@@ -233,7 +233,7 @@ def request_access():
     response = requests.post(f"http://{proxy_address}:{proxy_port}/get_address", json=data)
     if response.status_code == 200:
         return (
-            jsonify({"message": "Access request submitted for group ID: " + group_id}),
+            jsonify({"message": "Access request submitted for group ID: " + str(group_id)}),
             200,
         )
     else:
