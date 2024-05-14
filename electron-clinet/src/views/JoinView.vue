@@ -239,6 +239,7 @@ export default {
             } else {
                 alert("未成功移除");
             }
+            this.getMemberGroups();
         },
         confirmAll() {
             this.toBeConfirmed.forEach(item => {
@@ -266,6 +267,7 @@ export default {
             this.dialogFormVisible = false;
         },
         refresh() {
+            this.getToBeConfirmed();
             this.getMemberGroups();
         },
         downloadAll(groupId) {

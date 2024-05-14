@@ -568,6 +568,7 @@ export default {
     mounted() {
         // this.multipleTableRef = this.$refs.multipleTableRef;
         this.getMyGroupAndFiles();
+        this.refresh();
         this.ipfs = create("http://localhost:5001/api/v0");
     }
 }
