@@ -80,7 +80,7 @@
                         </div>
                         <div class="group">
                             <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
-                            <div style="font-size: small; color: #1d74f2;">{{ group.info.id }}</div>
+                            <div style="font-size: small; color: #1d74f2;">{{ generateHash(group.info.id) }}</div>
                         </div>
                         <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
                         </div>
@@ -132,22 +132,6 @@
                         </div>
                     </div>
 
-                    <el-dialog v-model="uploadVisible" title="" width="400" align-center>
-                        <el-upload ref="upload" class="upload-file"
-                            action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15" :limit="1"
-                            :on-exceed="handleExceed" :auto-upload="false" @change="handleFileChange">
-                            <template #trigger>
-                                <el-button type="primary" plain>选择文件</el-button>
-                            </template>
-                            <template #tip>
-                                <div class="el-upload__tip text-red"></div>
-                            </template>
-                            <el-button class="ml-3" type="success" plain @click="uploadFile(group.info.id)"
-                                style="margin-left: 20px">
-                                上传IPFS
-                            </el-button>
-                        </el-upload>
-                    </el-dialog>
                 </div>
             </div>
             <div v-else>
@@ -158,14 +142,15 @@
                         </div>
                         <div class="group">
                             <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
-                            <div style="font-size: small; color: #1d74f2;">{{ group.info.id }}</div>
+                            <!-- <div style="font-size: small; color: #1d74f2;">{{ group.info.id }}</div> -->
+                            <div style="font-size: small; color: #1d74f2;">{{ generateHash(group.info.id) }}</div>
                         </div>
                         <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
                         </div>
                         <div class="description" v-else>无介绍</div>
                         <div class="buttons">
                             <!-- <input type="file" plain class="upload-button" @change="uploadFile($event, group.info.id)"> -->
-                            <el-button type="primary" plain class="show-upload" @click.stop="showUploadDialog()">
+                            <el-button type="primary" plain class="show-upload" @click.stop="showUploadDialog(group.info.id)">
                                 <el-icon color="#409efc">
                                     <UploadFilled style="width: 20px;" />
                                 </el-icon> 上传文件
@@ -190,7 +175,7 @@
                             <el-table-column label="文件名" prop="0" width="150" />
                             <el-table-column label="时间" prop="1" width="100" />
                             <el-table-column label="哈希CID" prop="2" width="420" />
-                            <el-table-column label="大小Mb" prop="3" />
+                            <el-table-column label="大小(KB)" prop="3" />
                             <el-table-column label="操作">
                                 <template #default="{ row }">
                                     <el-button @click="remove(row[0], row[2])" type="info" plain
@@ -205,24 +190,23 @@
                         </div>
                     </div>
                 </div>
-
-                    <el-dialog v-model="uploadVisible" title="" width="400" align-center>
-                        <el-upload ref="upload" class="upload-file"
-                            action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15" :limit="1"
-                            :on-exceed="handleExceed" :auto-upload="false" @change="handleFileChange">
-                            <template #trigger>
-                                <el-button type="primary" plain>选择文件</el-button>
-                            </template>
-                            <template #tip>
-                                <div class="el-upload__tip text-red"></div>
-                            </template>
-                            <el-button class="ml-3" type="success" plain @click="uploadFile(group.info.id)"
-                                style="margin-left: 20px">
-                                上传IPFS
-                            </el-button>
-                        </el-upload>
-                    </el-dialog>
-                </div>
+            </div>
+            <el-dialog v-model="uploadVisible" title="" width="400" align-center>
+                <el-upload ref="upload" class="upload-file"
+                    action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15" :limit="1"
+                    :on-exceed="handleExceed" :auto-upload="false" @change="handleFileChange">
+                    <template #trigger>
+                        <el-button type="primary" plain>选择文件</el-button>
+                    </template>
+                    <template #tip>
+                        <div class="el-upload__tip text-red"></div>
+                    </template>
+                    <el-button class="ml-3" type="success" plain @click="uploadFile()"
+                        style="margin-left: 20px">
+                        上传IPFS
+                    </el-button>
+                </el-upload>
+            </el-dialog>
             </div>
         </div>
     </div>
@@ -260,6 +244,7 @@ export default {
             multipleTableRef: null,
             filteredFiles: [],
             searchKeyword: '',
+            uploadingGroupId: '',
         };
     },
     methods: {
@@ -335,16 +320,16 @@ export default {
                 }
                 this.ownerGroup.push({
                     "info": {
-                        "id": this.generateHash(response.data.group_id),
+                        "id": response.data.group_id,
                         "name": group_name,
                         "description": group_description,
                     },
                     "files": []
                 });
+                this.getMyGroupAndFiles();
             } catch (error) {
                 console.log(error);
             }
-
         },
         async permit(userId, groupId, allowed) {
             if (allowed) {
@@ -408,9 +393,6 @@ export default {
                     } else {
                         this.noGroup = false;
                         this.ownerGroup = response.data.files;
-                        this.ownerGroup.forEach(group => {
-                            group.info.id = this.generateHash(group.info.id);
-                        });
                     }
                     console.log(response.data.files)
                 } else {
@@ -424,8 +406,9 @@ export default {
         disbandGroup(groupId) {
             console.log(`解散 ${groupId} 号群组`);
         },
-        showUploadDialog() {
+        showUploadDialog(groupId) {
             this.uploadVisible = true;
+            this.uploadingGroupId = groupId;
         },
         toggleGroups(groupId) {
             if (this.expandedGroups.includes(groupId)) {
@@ -486,9 +469,9 @@ export default {
                 alert("出现错误，联系开发人员");
             }
         },
-        // async uploadFile(event, groupId) {                        
-        async uploadFile(groupId) {
+        async uploadFile() {
             // const file = event.target.files[0];
+            const groupId = this.uploadingGroupId;
             const file = this.file;
             if (!file) {
                 return;
@@ -513,7 +496,7 @@ export default {
 
                 this.progress = 0; // Reset progress for new upload
                 try {
-                    const fileAdded = await this.ipfs.add(encryptedBlob, {
+                    const fileAdded = this.ipfs.add(encryptedBlob, {
                         progress: (bytes) => {
                             this.progress = (bytes / blob.size) * 100;
                         }
@@ -544,12 +527,15 @@ export default {
                         console.error('Error uploading the file:', error);
                     }
                 } catch (error) {
+                    // TODO：暂时忽略其他类型错误，只考虑重复文件上传
                     console.error('Error uploading the file:', error);
+                    alert("此文件已存在，无需重复上传 : )");
                 }
             };
 
             reader.readAsArrayBuffer(file); // 读取文件内容
-        },
+            this.uploadVisible = false;
+    },
         disband() {
             console.log("解散群组");
         },
@@ -576,11 +562,11 @@ export default {
                     totalSize += size;
                 }
             }
-            return (totalSize / 1024).toFixed(2) + " GiB";
+            return (totalSize / 1024).toFixed(2) + " MiB";
         }
     },
     mounted() {
-        this.multipleTableRef = this.$refs.multipleTableRef;
+        // this.multipleTableRef = this.$refs.multipleTableRef;
         this.getMyGroupAndFiles();
         this.ipfs = create("http://localhost:5001/api/v0");
     }

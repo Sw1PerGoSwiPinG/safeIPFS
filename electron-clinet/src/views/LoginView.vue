@@ -55,7 +55,7 @@ export default {
                 }
             } catch (error) {
                 console.log(error);
-                alert("出现错误，联系开发人员");
+                alert("用户名或密码错误，请重新输入");
             }
         }
     },

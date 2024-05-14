@@ -20,7 +20,14 @@ const CryptoService = {
   // Encrypts a file using AES-256 in CBC mode
   async encryptFile(fileBlob, key) {
     const data = await fileBlob.arrayBuffer();
-    const iv = crypto.getRandomValues(new Uint8Array(16)); // IV size for AES-CBC is 16 bytes
+    const IVString = 'safeipfssafeipfs';
+    const iv = new Uint8Array(IVString.length);
+
+    for (let i = 0; i < IVString.length; i++) {
+      iv[i] = IVString.charCodeAt(i);
+    }
+
+    // const iv = crypto.getRandomValues(new Uint8Array(16)); // IV size for AES-CBC is 16 bytes
     try {
       const encryptedData = await window.crypto.subtle.encrypt(
         {

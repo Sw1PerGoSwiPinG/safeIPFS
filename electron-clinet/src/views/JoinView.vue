@@ -61,7 +61,7 @@
                         </div>
                         <div class="group">
                             <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
-                            <div style="font-size: small; color: #1d74f2;">{{ group.info.id }}</div>
+                            <div style="font-size: small; color: #1d74f2;">{{ generateHash(group.info.id) }}</div>
                         </div>
                         <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
                         </div>
@@ -183,25 +183,25 @@ export default {
                 });
             });
         },
-        async sendUserId() {
-            const response = await axios.post('http://localhost:5000/request_group_files', {
-                userId: this.$route.params.userId
-            });
-            if (response.status === 200) {
-                if (response.data.files.length == 0) {
-                    this.noGroup = true;
-                } else {
-                    this.noGroup = false;
-                    this.memberGroup = response.data.files;
-                    this.memberGroup.forEach(group => {
-                        group.info.id = this.generateHash(group.info.id);
-                    });
-                }
-                console.log(response.data.files);
-            } else {
-                alert("请求失败，请联系开发人员");
-            }
-        },
+        // async sendUserId() {
+        //     const response = await axios.post('http://localhost:5000/request_group_files', {
+        //         userId: this.$route.params.userId
+        //     });
+        //     if (response.status === 200) {
+        //         if (response.data.files.length == 0) {
+        //             this.noGroup = true;
+        //         } else {
+        //             this.noGroup = false;
+        //             this.memberGroup = response.data.files;
+        //             // this.memberGroup.forEach(group => {
+        //             //     group.info.id = this.generateHash(group.info.id);
+        //             // });
+        //         }
+        //         console.log(response.data.files);
+        //     } else {
+        //         alert("请求失败，请联系开发人员");
+        //     }
+        // },
         async getToBeConfirmed() {
             const response = await axios.post('http://localhost:5000/get_approved_requests', {
                 requester_id: this.$route.params.userId
@@ -284,9 +284,9 @@ export default {
                 } else {
                     this.noGroup = false;
                     this.memberGroup = response.data.files;
-                    this.memberGroup.forEach(group => {
-                        group.info.id = this.generateHash(group.info.id);
-                    })
+                    // this.memberGroup.forEach(group => {
+                    //     group.info.id = this.generateHash(group.info.id);
+                    // })
                 }
                 console.log(response.data.files);
             } else {
