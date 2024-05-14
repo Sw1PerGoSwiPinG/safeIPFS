@@ -496,7 +496,7 @@ export default {
 
                 this.progress = 0; // Reset progress for new upload
                 try {
-                    const fileAdded = this.ipfs.add(encryptedBlob, {
+                    const fileAdded = await this.ipfs.add(encryptedBlob, {
                         progress: (bytes) => {
                             this.progress = (bytes / blob.size) * 100;
                         }
@@ -525,11 +525,11 @@ export default {
                         });
                     } catch (error) {
                         console.error('Error uploading the file:', error);
+                        alert("此文件已存在，无需重复上传 : )");
                     }
                 } catch (error) {
                     // TODO：暂时忽略其他类型错误，只考虑重复文件上传
                     console.error('Error uploading the file:', error);
-                    alert("此文件已存在，无需重复上传 : )");
                 }
             };
 
