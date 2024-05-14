@@ -61,7 +61,7 @@
                         </div>
                         <div class="group">
                             <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
-                            <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
+                            <div style="font-size: small; color: #1d74f2;">{{ group.info.id }}</div>
                         </div>
                         <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
                         </div>
@@ -273,6 +273,25 @@ export default {
         },
         quitGroup(groupId) {
             console.log(`退出群组 ${groupId}`);
+        },
+        async getMemberGroups() {
+            const response = await axios.post('http://localhost:5000/request_group_files', {
+                userId: this.$route.params.userId
+            });
+            if (response.status === 200) {
+                if (response.data.files.length == 0) {
+                    this.noGroup = true;
+                } else {
+                    this.noGroup = false;
+                    this.memberGroup = response.data.files;
+                    this.memberGroup.forEach(group => {
+                        group.info.id = this.generateHash(group.info.id);
+                    })
+                }
+                console.log(response.data.files);
+            } else {
+                alert("请求失败，请联系开发人员");
+            }
         },
         toggleFiles(groupId) {
             if (this.expandedGroups.includes(groupId)) {

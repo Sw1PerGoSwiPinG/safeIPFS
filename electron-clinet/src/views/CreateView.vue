@@ -80,7 +80,7 @@
                         </div>
                         <div class="group">
                             <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
-                            <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
+                            <div style="font-size: small; color: #1d74f2;">{{ group.info.id }}</div>
                         </div>
                         <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
                         </div>
@@ -158,7 +158,7 @@
                         </div>
                         <div class="group">
                             <div style="font-size: large; font-weight: bold">{{ group.info.name }}</div>
-                            <div style="font-size: medium; color: #1d74f2;">{{ group.info.id }}</div>
+                            <div style="font-size: small; color: #1d74f2;">{{ group.info.id }}</div>
                         </div>
                         <div class="description" v-if="group.info.description.length != 0">{{ group.info.description }}
                         </div>
