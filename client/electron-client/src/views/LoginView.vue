@@ -99,7 +99,7 @@ export default {
 
 .background {
     flex: 3;
-    background-image: url('../assets/ipfs.png');
+    background-image: url('../assets/ipfs-1.png');
     background-size: cover;
     font-family: sans-serif;
 }
