@@ -36,6 +36,7 @@ CREATE TABLE request_cache (
     owner_id VARCHAR(255),
     requester_id VARCHAR(255),
     requester_public_key TEXT,
+    time varchar(255) DEFAULT NULL,
     group_id INT,
     PRIMARY KEY (owner_id, requester_id, group_id)
 );
